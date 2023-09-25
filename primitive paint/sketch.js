@@ -5,18 +5,14 @@
 let ballX, changeSize=5, ballSize=90;
 let overlay;
 let preview;
-let colorA, colorB, colorC;
+let colorA;
 let currentShape;
-
-
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   overlay = createGraphics(width, height);
   ballX = width/2;
-  colorA = color(random(255), random(255), random(255));
-  colorB = color(random(255), random(255), random(255));
-  colorC = color(random(255), random(255), random(255));
+  colorA = color(random(255), random(255), random(255));  // choosing random colors for switching colors
   textFont("Helvetica"); // Change the font
   textSize(24); // Change the text size
 }
@@ -26,35 +22,30 @@ function shapes() {
     if(key==="a") currentShape="rectangle";
     else if(key==="s") currentShape="ellipse";
     else if(key==="d") currentShape="triangle";
-    else if(key==="c"){
+    else if(key==="c"){ //key for changing colors
       colorA = color(random(255), random(255), random(255));
-      colorB = color(random(255), random(255), random(255));
-      colorC = color(random(255), random(255), random(255));
     }
     else if(key===" "){
       overlay.clear(); // Clear the overlay when spacebar is pressed
     }
   }
+  
   if(mouseIsPressed){
     overlay.noStroke(); //remove stroke from shapes
+    overlay.fill(colorA);
     if (currentShape === "rectangle") {
-      overlay.fill(colorA);
       overlay.rect(mouseX, mouseY, 50, 25);
     }
     else if (currentShape === "ellipse") {
-      overlay.fill(colorB);
       overlay.ellipse(mouseX, mouseY, 50, 25);
     }
     else if (currentShape === "triangle") {
-      overlay.fill(colorC);
       overlay.triangle(mouseX, mouseY, mouseX - 50, mouseY + 100, mouseX + 50, mouseY + 100);
     }
   }
   image(overlay, 0, 0);
 }
-
   
-
 function draw() {
   background(220);
   drawAndMoveBall();
@@ -65,6 +56,7 @@ function draw() {
   text("Raghad Ibrahim", 20, height - 20);
 }
 
+//adding a new screen for a preview
 function drawPreview() {
   preview = createGraphics(width, height);
   preview.noFill();

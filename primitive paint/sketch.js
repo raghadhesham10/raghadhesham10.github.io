@@ -60,7 +60,7 @@ function draw() {
 function drawPreview() {
   preview = createGraphics(width, height);
   preview.noFill();
-  preview.stroke(0) //set outline
+  preview.stroke(colorA) //set outline
   preview.strokeWeight(2) //set outline thinckness
 
   if (currentShape === "rectangle") {

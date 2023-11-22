@@ -44,7 +44,7 @@ function drawGrid() {
       //line(mouseX,mouseY,x,y);
 
       //test2
-      if (dispatchEvent(x,y,mouseX,mouseY) < 50){
+      if (dis(x,y,mouseX,mouseY) < 50){
         fill(255,0,0);
       }
       else{

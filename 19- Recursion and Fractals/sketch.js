@@ -53,7 +53,6 @@ function cantor(x,y,len,depth){
     cantor(x + len*2/3, newY, len/3, depth-1);
   }
   //base case - stat to unravel
-
 }
 
 function circleInCircle(x, y, d){

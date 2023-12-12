@@ -1,15 +1,23 @@
-// Project Title
-// Your Name
+// Final Project
+// Raghad Ibrahim
 // Date
-//
-// Extra for Experts:
-// - describe what you did to take this project "above and beyond"
 
 
+let sponge = [];
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(1920, 1080);
+  frameRate(10);
+
+}
+
+
+function preload(){
+  for(let i = 0; i< 3; i++){
+    sponge.push(loadImage("assets/" + i + ".png"));
+  }
 }
 
 function draw() {
   background(220);
+  image(sponge[frameCount%3],0,0);
 }

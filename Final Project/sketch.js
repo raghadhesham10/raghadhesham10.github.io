@@ -3,14 +3,13 @@
 // Date
 
 let sAnimation = []; // Array to hold sponge animation frames
-let spongeY;
 let bImage;  //background
-let gravityPoint;
-
+let sponge;
 // collectables
 let burgers = [];
-let food;
+let burgerImage;
 let burgerSpeed = 10;
+let burgerInterval = 80;
 let score = 0;
 
 function preload() {
@@ -20,27 +19,30 @@ function preload() {
   }
   //background
   bImage = loadImage("assets2/5.png");
-  food = loadImage("assets2/4.png");
+  burgerImage = loadImage("assets2/4.png");
 }
 
 function setup() {
   createCanvas(1920, 1080);
   frameRate(10);
-  imageMode(CENTER);
-  spongeY = height / 2;
-  gravityPoint = height / 2;
+  sponge = new Character();
 }
 
 function draw() {
-  gravity();
-  movement();
-  //displaying images
+  imageMode(CENTER);
   image(bImage, width/2, height/2);
-  image(sAnimation[frameCount % 4], 1350, spongeY);
+  imageMode(CORNER);
+  sponge.display();
+  sponge.move();
+  sponge.gravity();
 
   // Add new burgers at regular intervals
-  if (frameCount % 80 === 0) {
+  if (frameCount % burgerInterval === 0) {
     burgers.push(new Burger());
+  }
+  // Decrease burger generation interval over time
+  if (burgerInterval > 40) {
+    burgerInterval -= 1;
   }
 
   // Display and update each burger
@@ -51,39 +53,52 @@ function draw() {
     if (burgers[i].offscreen()) {
       burgers.splice(i, 1);
     }
+    //collide
+    if (collideRectRect(sponge.x, sponge.y, 185, 295, burgers[i].x, burgers[i].y, 100, 82)){
+      burgers.splice(i, 1);
+      score+=1;
+    }
   }
+  rect(sponge.x, sponge.y, 185, 295);
 }
 
-// Move player with arrow keys
-function movement(){
-  if (keyIsDown(UP_ARROW) && spongeY > 150) {
-    spongeY -= 10;
+class Character{
+  constructor(){
+    this.x = width / 1.4;
+    this.y = height / 2;
+    this.g = height / 2;
   }
-  if (keyIsDown(DOWN_ARROW) && spongeY < height - 150) {
-    spongeY += 10;
+  move(){
+    if (keyIsDown(UP_ARROW) && this.y > 150) {
+      this.y -= 20;
+    }
+    if (keyIsDown(DOWN_ARROW) && this.y < height - 150) {
+      this.y += 20;
+    }
   }
-}
-
-//creates a garvity effect at the center of the tank
-function gravity(){
-  if (!keyIsPressed){
-    if(spongeY > gravityPoint) spongeY-=15;
-    if(spongeY < gravityPoint) spongeY+=15;
+  gravity(){
+    if (!keyIsDown(UP_ARROW) && !keyIsDown(DOWN_ARROW)){
+      if(this.y > this.g) this.y-=15;
+      if(this.y < this.g) this.y+=15;
+    }
+  }
+  display(){
+    image(sAnimation[frameCount % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
   }
 }
 
 class Burger{
   constructor(){
-    this.x = -food.width;
+    this.x = -burgerImage.width;
     this.y = random(height - 150, 150);
   }
   display(){
-    image(food, this.x, this.y);
+    image(burgerImage, this.x, this.y);
   }
   update() {
     this.x += burgerSpeed;
   }
   offscreen() {
-  return this.x > width; // Check if the burger is completely offscreen on the right side
+  return this.x > width; // returns true if offscreen
   }
 }

@@ -7,10 +7,13 @@ let bImage;  //background
 let sponge;
 // collectibles
 let collectibles = [];
+let obstacles = [];
 let burgerImage;
 let jamImage;
+let rock;
 let speed = 10;
 let burgerInterval = 80;
+let obstacleInterval = 200;
 let jamInterval = 80;
 let score = 0;
 let jamScore = 0;
@@ -25,6 +28,8 @@ function preload() {
   bImage = loadImage("assets/backg" + num + ".png");
   burgerImage = loadImage("assets/4.png");
   jamImage = loadImage("assets/5.png");
+  rock = loadImage("assets/rock.png");
+
 }
 
 function setup() {
@@ -44,20 +49,23 @@ function draw() {
   text(score, 1670, 90);
   text(jamScore, 1670, 213);
 
-  // Add new burgers at regular intervals
+  // Add new burgers nd obstacles at regular intervals
   if (frameCount % burgerInterval === 0) {
     collectibles.push(new Food(burgerImage));
   }
-  // Decrease burger generation interval over time
-  if (burgerInterval > 40) {
-    burgerInterval -= 1;
+  if (frameCount % obstacleInterval === 0) {
+    obstacles.push(new Food(rock));
   }
-  //  Add jams rarely
+
+  // // Decrease generation interval over time
+  // if (burgerInterval > 40) burgerInterval -= 1;
+  // if(obstacleInterval > 70) obstacleInterval -=1;
+
+  // Add jams rarely
   if(random(1000)< 1){
     collectibles.push(new Food(jamImage));
   }
 
-  // Display and update each collectible
   for (let i = collectibles.length - 1; i >= 0; i--) {
     collectibles[i].display();
     collectibles[i].update();
@@ -71,15 +79,31 @@ function draw() {
       let collidedCollectible = collectibles[i]; // Store reference
       collectibles.splice(i, 1);
       if (collidedCollectible.image === burgerImage){
-        score+=1; //increase burger score
+        score += 1; //increase burger score
       }
       else{
         jamScore += 1; //increase jam score
       }
     }
   }
- // rect(sponge.x + 100, sponge.y - 80, 100, 80);
+
+ // looping through obstacle arrays
+ for (let i = obstacles.length - 1; i >= 0; i--) {
+  obstacles[i].display();
+  obstacles[i].update();
+  if (obstacles[i].offscreen()) {
+    obstacles.splice(i, 1);
+  }
+  if (collideRectRect(sponge.x + 100, sponge.y - 80, 
+    100, 80, obstacles[i].x, obstacles[i].y, 360, 250)){
+      noLoop()
+  }
 }
+// rect(sponge.x + 100, sponge.y - 80, 100, 80);
+
+}
+
+
 
 class Character{
   constructor(){

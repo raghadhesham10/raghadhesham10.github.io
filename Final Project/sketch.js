@@ -5,7 +5,7 @@
 let sAnimation = []; // Array to hold sponge animation frames
 let bImage;  //background
 let sponge;
-// collectibles
+
 let collectibles = [];
 let obstacles = [];
 let burgerImage;
@@ -34,7 +34,6 @@ function preload() {
 
 function setup() {
   createCanvas(1920, 1080);
-  frameRate(10);
   sponge = new Character();
 }
 
@@ -49,7 +48,7 @@ function draw() {
   text(score, 1670, 90);
   text(jamScore, 1670, 213);
 
-  // Add new burgers nd obstacles at regular intervals
+  // Add new burgers and obstacles at regular intervals
   if (frameCount % burgerInterval === 0) {
     collectibles.push(new Food(burgerImage));
   }
@@ -126,15 +125,16 @@ class Character{
     }
   }
   display(){
-    image(sAnimation[frameCount % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
+    image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
   }
 }
 
-class Food{
+class Items{
   constructor(image){
-    this.x = -image.width;
-    this.y = random(height - 150, 150);
     this.image = image
+    this.x = 0;
+    this.y = 0;
+    this.speed = 2;
   }
   display(){
     image(this.image, this.x, this.y);
@@ -145,4 +145,17 @@ class Food{
   offscreen() {
   return this.x > width; // returns true if offscreen
   }
+}
+
+class Obstacle extends Items{
+  constructor(image){
+    super(image)
+    this.x = -image.width;
+    this.y = random(height - 150, 150);
+
+  }
+  display(){
+
+  }
+
 }

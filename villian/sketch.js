@@ -13,39 +13,41 @@ function preload() {
 
 function setup() {
   createCanvas(1920, 1080);
-  frameRate(10);
   image(startabnoss[frameCount % 7], 0, 250);
 }
 
 function draw() {
   background(220);
-  if (frameCount % 10 === 0) {
+  if (frameCount % 70 === 0) {
     circles.push(new MovingCircles());
   }
   moveAndDisplayCircles();
-  image(bossAnimation[frameCount % 6], 0, 250);
+  image(bossAnimation[int(frameCount/10) % 6], 0, 250);
 }
 
 class MovingCircles{
   constructor(){
     this.y = height/2;
     this.x = 200;
-    this.speed = 20;
+    this.speed = 5;
     this.radius = 30;
+    this.time = random(100);
   }
   update() {
+    let n = noise(this.time);
     this.x += this.speed;
-    this.y += map(noise(this.x * 0.01, this.y * 0.01), 0, 1, -100, 100);
+    this.y += map(n, 0, 1, -10, 10);
+    this.time += 0.01;
   }
 
   display() {
-    fill(0);
+    fill(0, 115, 72);
     noStroke();
-    ellipse(this.x, this.y, this.radius * 2);
+    circle(this.x, this.y, this.radius * 2);
   }
 
   isOffScreen() {
-    return this.x > width + this.radius;
+    return this.x > width;
   }
 }
 

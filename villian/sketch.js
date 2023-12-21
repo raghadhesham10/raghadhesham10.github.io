@@ -1,10 +1,10 @@
 let bossAnimation = [];
-let startabnoss = [];
+let startboss = [];
 let circles = [];
 let villain;
 function preload() {
   for (let i = 0; i < 7; i++) {
-    startabnoss.push(loadImage("assets/" + i + ".png"));
+    startboss.push(loadImage("assets/" + i + ".png"));
   }
   for (let i = 6; i < 12; i++) {
     bossAnimation.push(loadImage("assets/" + i + ".png"));
@@ -13,7 +13,7 @@ function preload() {
 
 function setup() {
   createCanvas(1920, 1080);
-  image(startabnoss[frameCount % 7], 0, 250);
+  image(startboss[frameCount % 7], 0, 250);
 }
 
 function draw() {

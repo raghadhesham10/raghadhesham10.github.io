@@ -276,17 +276,20 @@ class Food{
 }
 
 class Power extends Food{
+  constructor(image, type){
+    super(image, type);
+  }
   display(){
     image(this.image[int(frameCount/10) % 4], this.x, this.y);
   }
 }
 
 class Obstacle extends Food{
-  constructor(image){
-    super(image)
+  constructor(image, type){
+    super(image, type);
     this.y = random(lanes);
     if(collectibles.length > 0){
-      while(dist(0, this.y, 0, collectibles[collectibles.length-1].y) < image.height){
+      while(dist(0, this.y, 0, collectibles[collectibles.length-1].y) < image.height*1.2){
         this.y = random(lanes);
       }
     }
@@ -323,13 +326,13 @@ function moveAndDisplayCircles() {
   for (let i = circles.length - 1; i >= 0; i--) {
     circles[i].update();
     circles[i].display();
-    if (circles[i].isOffScreen()) {
-      circles.splice(i, 1);
-    }
     //collide
     if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
       circles[i].x, circles[i].y, circles[i].radius * 2)){
       playerLoses = true;
+    }
+    if (circles[i].isOffScreen()) { //on eof the challengse
+      circles.splice(i, 1);
     }
   }
 }
@@ -338,13 +341,13 @@ function moveAndDisplayObstacles(){
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].display();
     obstacles[i].update();
-    if (obstacles[i].offscreen()) {
-      obstacles.splice(i, 1);
-    }
     //collide
     if (collideRectRect(sponge.x + 63, sponge.y - 135, 170, 200,
       obstacles[i].x, obstacles[i].y + 10, 337, 228)){
       playerLoses = true;
+    }
+    if (obstacles[i].offscreen()) {
+      obstacles.splice(i, 1);
     }
   }
 }
@@ -370,8 +373,8 @@ function moveAndDisplayCollectibles(){
       else if (collectibles[i].type === "double"){
         theDouble = true;
         doubleTime ++;
-        if (powerTime === 500){
-          doubleTime = false;
+        if (doubleTime === 500){
+          theDouble = false;
           doubleTime = 0;
         }
       }
@@ -392,6 +395,7 @@ function pushingCollectibles(){
   // Add powerups randomly
   if (frameCount % collectiblesInterval === 0) {
     collectibles.push(new Power(double, "double"));
+    print("yes");
   }
 }
 

@@ -128,12 +128,13 @@ function draw() {
     sponge.display();
     sponge.move();
     sponge.gravity();
+    fill(0);
     textSize(60);
     text(score, 1670, 90);
     text(jamScore, 1670, 213);
     pushingCollectibles();
     moveAndDisplayCollectibles();
-
+    
     if (phase === 1){
       //clearing obstacles before boss enters
       if(obstacles.length === 0){
@@ -190,6 +191,8 @@ function draw() {
     }
   }
 
+
+
   //main menu
   if (shopClicked) {
     displaySquare();
@@ -203,7 +206,7 @@ function draw() {
 class Character{
   constructor(){
     this.x = width / 1.4;
-    this.y = height / 2 
+    this.y = height / 2; 
     this.g = height / 2;
   }
   move(){
@@ -227,31 +230,13 @@ class Character{
     }
   }
   display(){
-    image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
-  }
-}
-
-class Character2{
-  constructor(){
-    this.x = width / 1.4;
-    this.y = 200*2;  
-  }
-  move() {
-    if (keyIsDown(UP_ARROW) && this.y > spongeLane && !this.isKeyPressed) {
-      this.y -= spongeLane;
-      this.isKeyPressed = true; // Set to true when moving
+    if (theShield === true){
+      noStroke();
+      fill(77, 166, 255, 200);
+      imageMode(CENTER);
+      ellipse(this.x + 150, this.y, 320, 330);
+      imageMode(CORNER);
     }
-    if (keyIsDown(DOWN_ARROW) && this.y < height-spongeLane && !this.isKeyPressed) {
-      this.y += spongeLane;
-      this.isKeyPressed = true; // Set to true when moving
-    }
-
-    // Reset when the key is released
-    if (!keyIsDown(UP_ARROW) && !keyIsDown(DOWN_ARROW)) {
-      this.isKeyPressed = false;
-    }
-  }
-  display(){
     image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
   }
 }
@@ -278,6 +263,7 @@ class Food{
 class Power extends Food{
   constructor(image, type){
     super(image, type);
+    this.x = -image[0].width;
   }
   display(){
     image(this.image[int(frameCount/10) % 4], this.x, this.y);
@@ -288,11 +274,12 @@ class Obstacle extends Food{
   constructor(image, type){
     super(image, type);
     this.y = random(lanes);
-    if(collectibles.length > 0){
-      while(dist(0, this.y, 0, collectibles[collectibles.length-1].y) < image.height*1.2){
-        this.y = random(lanes);
-      }
-    }
+    // if(collectibles.length > 0){
+    //   while(collideRectRect(this.x, this.y, 337, 228, 
+    //   collectibles[collectibles.length-1].x, collectibles[collectibles.length-1].y, 100, 82)){
+    //     this.y = random(lanes);
+    //   }
+    // }
   }
 }
 
@@ -342,12 +329,14 @@ function moveAndDisplayObstacles(){
     obstacles[i].display();
     obstacles[i].update();
     //collide
-    if (collideRectRect(sponge.x + 63, sponge.y - 135, 170, 200,
-      obstacles[i].x, obstacles[i].y + 10, 337, 228)){
-      playerLoses = true;
-    }
-    if (obstacles[i].offscreen()) {
-      obstacles.splice(i, 1);
+    if (theShield === false){
+      if (collideRectRect(sponge.x + 63, sponge.y - 135, 170, 200,
+        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
+        playerLoses = true;
+      }
+      if (obstacles[i].offscreen()) {
+        obstacles.splice(i, 1);
+      }
     }
   }
 }
@@ -378,6 +367,14 @@ function moveAndDisplayCollectibles(){
           doubleTime = 0;
         }
       }
+      else if (collectibles[i].type === "shield"){
+        theShield = true;
+        shieldTime ++;
+        if (shieldTime === 500){
+          theShield = false;
+          shieldTime = 0;
+        }
+      }
       collectibles.splice(i, 1);
     }
   }
@@ -395,7 +392,9 @@ function pushingCollectibles(){
   // Add powerups randomly
   if (frameCount % collectiblesInterval === 0) {
     collectibles.push(new Power(double, "double"));
-    print("yes");
+  }
+  if (frameCount % collectiblesInterval === 0) {
+    collectibles.push(new Power(shield, "shield"));
   }
 }
 

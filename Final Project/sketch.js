@@ -3,14 +3,15 @@
 // Date
 
 // they are still overlapping
-// bos error.
-// speed is not increasing overtime, check variabls.
-// resetting speed to 10 isnot working.
 // create certian lanes for collectibles.
+// why is it crashing when speed is increased
+// how to reset speed of game
+// ask about speedUp vs update
+// new boss error
 
 
 // main menue
-let playerLoses = false;
+let playerLoses = 0;
 let shopClicked = false; // Track if Shop option is clicked
 let homeClicked = false; // Track if Home option is clicked
 
@@ -24,23 +25,24 @@ let obstacles = [];
 let burgerImage;
 let jamImage;
 let rockImage;
-let collectiblesInterval = 80;
+let collectiblesInterval = 50;
 let obstacleInterval = 100;
 let lanes = [0, 270, 270*2, 270*3];
 let spongeLane = 270;
 let jamInterval = 80;
-let speedIncrease = 20;
+let speedIncrease = 1;
 
 // power ups
 let double = [];
-let magnet = [];
 let shield = [];
+let magnet = [];
 let theDouble = false;
 let theShield = false;
 let theMagnet = false;
 let doubleTime = 0;
-let magnetTime = 0;
 let shieldTime = 0;
+let magnetTime = 0;
+let powerInterval = 1000;
 
 // score and shop system
 let score = 0;
@@ -57,10 +59,10 @@ let bossTime = 0;
 let bossFrame = 0;
 let villain;
 
-//try
-let jam;
-let burger;
-let rock;
+// spongebob's dying array
+let dying = [];
+let dyingFrame = 0; 
+let showDyingAnimation = true;
 
 function preload() {
   bImage = loadImage("assets/backg1.png");
@@ -94,37 +96,54 @@ function preload() {
   for (let i = 0; i < 4; i++) {
     shield.push(loadImage("assets/powerups/shield" + i + ".png"));
   }
+  // dying animation
+  for (let i = 0; i < 5; i++) {
+    dying.push(loadImage("assets/dying/" + i + ".png"));
+  }
 }
 
 function setup() {
   createCanvas(1920, 1080);
   sponge = new Character();
-  rock = new Obstacle(rockImage);
-  jam = new Food(jamImage);
-  burger = new Food(burgerImage);
 }
 
 function draw() {
-  if (playerLoses){
-    textAlign(CENTER, CENTER);
-    displayMenu();
-    //update scores for shop system
-    overallScore = overallScore = score;
-    overallJamScore = overallJamScore + jamScore;
+  //morning background
+  if (phase === 4){
+    imageMode(CENTER);
+    image(bImage, width/2, height/2);
+    imageMode(CORNER);
   }
+  //switch to night background when boss enters
+  else{
+    imageMode(CENTER);
+    image(bImage2, width/2, height/2);
+    imageMode(CORNER);
+  }
+  if (playerLoses === 1){
+    if (showDyingAnimation && dyingFrame < dying.length * 10){
+      // Display the dying animation for 40 frames
+      image(dying[int(dyingFrame / 10) % dying.length], sponge.x, sponge.y - dying[0].height / 2, 306, 295);
+      dyingFrame++;
+    }
+    else {
+      playerLoses = 2;
+    }
+  }
+  if (playerLoses === 2 ){
+
+  
+      // After the dying animation, display the menu
+      textAlign(CENTER, CENTER);
+      displayMenu();
+      // Update scores for the shop system
+      overallScore = overallScore = score;
+      overallJamScore = overallJamScore + jamScore;
+    }
+  
   else{ 
     //normal game code
     textAlign(LEFT, BASELINE);
-    if (phase === 4){ //morning background
-      imageMode(CENTER);
-      image(bImage, width/2, height/2);
-      imageMode(CORNER);
-    }
-    else{ //switch to night background when boss enters
-      imageMode(CENTER);
-      image(bImage2, width/2, height/2);
-      imageMode(CORNER);
-    }
     sponge.display();
     sponge.move();
     sponge.gravity();
@@ -134,7 +153,8 @@ function draw() {
     text(jamScore, 1670, 213);
     pushingCollectibles();
     moveAndDisplayCollectibles();
-    
+    PowerupsTiming();
+
     if (phase === 1){
       //clearing obstacles before boss enters
       if(obstacles.length === 0){
@@ -171,7 +191,10 @@ function draw() {
       }
       if(frameCount%7===0)bossFrame++;
       if(bossFrame>=7){
-        if (circles.length === 0) phase = 4;
+        if (circles.length === 0){
+          phase = 4;
+          bossFrame = 0; 
+        }
         else moveAndDisplayCircles();
       }
     }
@@ -181,17 +204,9 @@ function draw() {
       if (frameCount % obstacleInterval === 0) {
         obstacles.push(new Obstacle(rockImage, "obstacle"));
       }
-      // increase speed of game element overtime
-      if (frameCount % 20 === 0) {
-        rock.speed += speedIncrease;
-        burger.speed += speedIncrease;
-        jam.speed += speedIncrease;
-      }
       moveAndDisplayObstacles();
     }
   }
-
-
 
   //main menu
   if (shopClicked) {
@@ -224,20 +239,23 @@ class Character{
     }
   }
   gravity(){
+    // if (playerLoses === 0)
     if (!keyIsDown(UP_ARROW) && !keyIsDown(DOWN_ARROW)){
       if(this.y > this.g) this.y-=15;
       if(this.y < this.g) this.y+=15;
     }
   }
   display(){
-    if (theShield === true){
-      noStroke();
-      fill(77, 166, 255, 200);
-      imageMode(CENTER);
-      ellipse(this.x + 150, this.y, 320, 330);
-      imageMode(CORNER);
+    if (playerLoses === 0){
+      image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
+      if (theShield === true){
+        noStroke();
+        fill(113, 72, 184, 225);
+        imageMode(CENTER);
+        ellipse(this.x + 150, this.y, 320, 330);
+        imageMode(CORNER);
+      }
     }
-    image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
   }
 }
 
@@ -247,14 +265,30 @@ class Food{
     this.type = type;
     this.x = -image.width;
     this.y = random(height - 150, 150);
-    this.speed = 10;
+    this.speed = 100;
   }
   display(){
     image(this.image, this.x, this.y);
   }
   update() {
-    this.x += this.speed;
+    if (theMagnet){
+      if(this.x < sponge.x) this.x += this.speed *1.3;
+      if(this.y < sponge.y) this.y += this.speed *1.3;
+      if(this.y > sponge.y) this.y -= this.speed *1.3;
+    }
+    else{
+      if (playerLoses === 0){
+        this.x += this.speed;
+      }
+    }
+    //this.speedUp();
   }
+  // speedUp(){
+  //   // increase speed of game element overtime
+  //   if (frameCount % 20 === 0 && this.speed < 40){
+  //     this.speed += speedIncrease;
+  //   }
+  // }
   offscreen() {
   return this.x > width; // returns true if offscreen
   }
@@ -280,6 +314,11 @@ class Obstacle extends Food{
     //     this.y = random(lanes);
     //   }
     // }
+  }
+  update(){
+    if (playerLoses === 0){
+      this.x += this.speed;
+    }
   }
 }
 
@@ -316,7 +355,7 @@ function moveAndDisplayCircles() {
     //collide
     if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
       circles[i].x, circles[i].y, circles[i].radius * 2)){
-      playerLoses = true;
+      playerLoses = 1;
     }
     if (circles[i].isOffScreen()) { //on eof the challengse
       circles.splice(i, 1);
@@ -332,7 +371,7 @@ function moveAndDisplayObstacles(){
     if (theShield === false){
       if (collideRectRect(sponge.x + 63, sponge.y - 135, 170, 200,
         obstacles[i].x, obstacles[i].y + 10, 337, 228)){
-        playerLoses = true;
+        playerLoses = 1;
       }
       if (obstacles[i].offscreen()) {
         obstacles.splice(i, 1);
@@ -345,10 +384,6 @@ function moveAndDisplayCollectibles(){
   for (let i = collectibles.length - 1; i >= 0; i--) {
     collectibles[i].display();
     collectibles[i].update();
-    // If collectible is off the screen, remove it from the array
-    if (collectibles[i].offscreen()) {
-      collectibles.splice(i, 1);
-    }
     //collide
     if (collideRectRect(sponge.x + 100, sponge.y - 80, 100, 80, collectibles[i].x, collectibles[i].y, 100, 82)){
       if (collectibles[i].type === "burger"){
@@ -361,20 +396,17 @@ function moveAndDisplayCollectibles(){
       }
       else if (collectibles[i].type === "double"){
         theDouble = true;
-        doubleTime ++;
-        if (doubleTime === 500){
-          theDouble = false;
-          doubleTime = 0;
-        }
       }
       else if (collectibles[i].type === "shield"){
         theShield = true;
-        shieldTime ++;
-        if (shieldTime === 500){
-          theShield = false;
-          shieldTime = 0;
-        }
       }
+      else if (collectibles[i].type === "magnet"){
+        theMagnet = true;
+      }
+      collectibles.splice(i, 1);
+    }
+    // If collectible is off the screen, remove it from the array
+    if (collectibles[i].offscreen()) {
       collectibles.splice(i, 1);
     }
   }
@@ -390,11 +422,40 @@ function pushingCollectibles(){
     collectibles.push(new Food(jamImage, "jam"));
   }
   // Add powerups randomly
-  if (frameCount % collectiblesInterval === 0) {
+  let randomNumber = Math.floor(random(0,4));
+  print(randomNumber);
+  if (frameCount % powerInterval=== 0 && randomNumber === 1){
     collectibles.push(new Power(double, "double"));
   }
-  if (frameCount % collectiblesInterval === 0) {
+  if (frameCount % powerInterval === 0 && randomNumber === 2){
     collectibles.push(new Power(shield, "shield"));
+  }
+  if (frameCount % 20 === 0 && randomNumber === 3){
+    collectibles.push(new Power(magnet, "magnet"));
+  }
+}
+
+function PowerupsTiming(){
+  if(theDouble === true){
+    doubleTime ++;
+    if (doubleTime === 500){
+      theDouble = false;
+      doubleTime = 0;
+    }
+  }
+  if(theShield === true){
+    shieldTime ++;
+    if (shieldTime === 500){
+      theShield = false;
+      shieldTime = 0;
+    }
+  }
+  if(theMagnet === true){
+    magnetTime ++;
+    if (magnetTime === 500){
+      theMagnet = false;
+      magnetTime = 0;
+    }
   }
 }
 
@@ -413,7 +474,7 @@ function mousePressed() {
   let menuHeight = height / 2.1;
   let buttonWidth = menuWidth - 100;
   let buttonHeight = 60;
-  if (playerLoses) {
+  if (playerLoses === 2) {
     if (
       mouseX > menuX + 50 &&
       mouseX < menuX + 50 + buttonWidth &&
@@ -510,9 +571,7 @@ function resetGame() {
   sponge.y = height / 2;
 
   //reset speed of game
-  rock.speed = 10;
-  burger.speed = 10;
-  jam.speed = 10;
+
 
   // Start a new game
   phase = 4;
@@ -520,7 +579,17 @@ function resetGame() {
   jamScore = 0;
   overallScore = 0;
   overallJamScore = 0;
-  playerLoses = false;
+  playerLoses = 0;
+  bossFrame = 0; // reset boos animation frames
   shopClicked = false; // Reset Shop click state
   homeClicked = false; // Reset Home click state
+
+  // Reset dying animation variables
+  showDyingAnimation = true;
+  dyingFrame = 0;
+
+  // Reset powerUps to false
+  theDouble = false;
+  theShield = false;
+  theMagnet = false;
 }

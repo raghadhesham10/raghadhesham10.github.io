@@ -6,9 +6,7 @@
 // create certian lanes for collectibles.
 // why is it crashing when speed is increased
 // how to reset speed of game
-// ask about speedUp vs update
 // new boss error
-
 
 // main menue
 let playerLoses = 0;
@@ -30,7 +28,7 @@ let obstacleInterval = 100;
 let lanes = [0, 270, 270*2, 270*3];
 let spongeLane = 270;
 let jamInterval = 80;
-let speedIncrease = 1;
+let speedIncrease = 0.1;
 
 // power ups
 let double = [];
@@ -63,6 +61,10 @@ let villain;
 let dying = [];
 let dyingFrame = 0; 
 let showDyingAnimation = true;
+
+// menu
+let loseMenu = false;
+let pauseMenu = false;
 
 function preload() {
   bImage = loadImage("assets/backg1.png");
@@ -113,12 +115,14 @@ function draw() {
     imageMode(CENTER);
     image(bImage, width/2, height/2);
     imageMode(CORNER);
+    drawPauseIcon();
   }
   //switch to night background when boss enters
   else{
     imageMode(CENTER);
     image(bImage2, width/2, height/2);
     imageMode(CORNER);
+    drawPauseIcon();
   }
   if (playerLoses === 1){
     if (showDyingAnimation && dyingFrame < dying.length * 10){
@@ -130,81 +134,86 @@ function draw() {
       playerLoses = 2;
     }
   }
-  if (playerLoses === 2 ){
-
-  
+  if (playerLoses === 2){
       // After the dying animation, display the menu
+      loseMenu = true;
       textAlign(CENTER, CENTER);
       displayMenu();
       // Update scores for the shop system
       overallScore = overallScore = score;
       overallJamScore = overallJamScore + jamScore;
     }
-  
   else{ 
-    //normal game code
-    textAlign(LEFT, BASELINE);
-    sponge.display();
-    sponge.move();
-    sponge.gravity();
-    fill(0);
-    textSize(60);
-    text(score, 1670, 90);
-    text(jamScore, 1670, 213);
-    pushingCollectibles();
-    moveAndDisplayCollectibles();
-    PowerupsTiming();
+    // checking if game is paused
+    if (pauseMenu){
+      textAlign(CENTER, CENTER);
+      displayPauseMenu();
+    }
+    else{
+      //normal game code
+      textAlign(LEFT, BASELINE);
+      sponge.display();
+      sponge.move();
+      sponge.gravity();
+      fill(0);
+      textSize(60);
+      text(score, 1670, 90);
+      text(jamScore, 1670, 213);
+      pushingCollectibles();
+      moveAndDisplayCollectibles();
+      PowerupsTiming();
 
-    if (phase === 1){
-      //clearing obstacles before boss enters
-      if(obstacles.length === 0){
-        image(startBoss[bossFrame], 0, 250);
-        if(frameCount%7===0)bossFrame++;
-        if(bossFrame===7){
-          bossTime = 0;
-          phase = 2;
+      if (phase === 1){
+        //clearing obstacles before boss enters
+        if(obstacles.length === 0){
+          image(startBoss[bossFrame], 0, 250);
+          if(frameCount%7===0)bossFrame++;
+          if(bossFrame===7){
+            bossTime = 0;
+            phase = 2;
+          }
         }
+        else moveAndDisplayObstacles(); //error
       }
-      else moveAndDisplayObstacles(); //error
-    }
 
-    if (phase === 2){
-      //boss gameplay phase
-      image(bossAnimation[int(frameCount/10) % 6], 0, 250);
-      moveAndDisplayCircles();
-      if (frameCount % 70 === 0) {
-        circles.push(new MovingCircles());
-      }
-      bossTime++;
-      if (bossTime === 500) {
-        phase = 3;
-        bossFrame = 0; 
-      }
-    }
-
-    if (phase === 3){
-      //end of boss
-      //check that all circles are gone
-      if (bossFrame < 7){
-        image(endBoss[bossFrame], 0, 250);
+      if (phase === 2){
+        //boss gameplay phase
+        image(bossAnimation[int(frameCount/10) % 6], 0, 250);
         moveAndDisplayCircles();
-      }
-      if(frameCount%7===0)bossFrame++;
-      if(bossFrame>=7){
-        if (circles.length === 0){
-          phase = 4;
+        if (frameCount % 70 === 0) {
+          circles.push(new MovingCircles());
+        }
+        bossTime++;
+        if (bossTime === 500) {
+          phase = 3;
           bossFrame = 0; 
         }
-        else moveAndDisplayCircles();
       }
-    }
 
-    if (phase === 4){
-      // Add new obstacles at regular intervals
-      if (frameCount % obstacleInterval === 0) {
-        obstacles.push(new Obstacle(rockImage, "obstacle"));
+      if (phase === 3){
+        //end of boss
+        //check that all circles are gone
+        if (bossFrame < 7){
+          image(endBoss[bossFrame], 0, 250);
+          moveAndDisplayCircles();
+        }
+        if(frameCount%7===0)bossFrame++;
+        if(bossFrame>=7){
+          if (circles.length === 0){
+            phase = 4;
+            bossFrame = 0; 
+          }
+          else moveAndDisplayCircles();
+        }
       }
-      moveAndDisplayObstacles();
+
+      if (phase === 4){
+        // Add new obstacles at regular intervals
+        if (frameCount % obstacleInterval === 0) {
+          obstacles.push(new Obstacle(rockImage, "obstacle"));
+        }
+        moveAndDisplayObstacles();
+      }
     }
   }
 
@@ -225,24 +234,27 @@ class Character{
     this.g = height / 2;
   }
   move(){
-    if (keyIsDown(UP_ARROW) && this.y > 150) {
-      this.y -= 20;
-    }
-    if (keyIsDown(DOWN_ARROW) && this.y < height - 150) {
-      this.y += 20;
-    }
-    if (keyIsDown(RIGHT_ARROW) && this.x < width / 1.4) {
-      this.x += 20;
-    }
-    if (keyIsDown(LEFT_ARROW) && this.x > 150) {
-      this.x -= 20;
+    if (playerLoses === 0){
+      if (keyIsDown(UP_ARROW) && this.y > 150) {
+        this.y -= 20;
+      }
+      if (keyIsDown(DOWN_ARROW) && this.y < height - 150) {
+        this.y += 20;
+      }
+      if (keyIsDown(RIGHT_ARROW) && this.x < width / 1.4) {
+        this.x += 20;
+      }
+      if (keyIsDown(LEFT_ARROW) && this.x > 150) {
+        this.x -= 20;
+      }
     }
   }
   gravity(){
-    // if (playerLoses === 0)
-    if (!keyIsDown(UP_ARROW) && !keyIsDown(DOWN_ARROW)){
-      if(this.y > this.g) this.y-=15;
-      if(this.y < this.g) this.y+=15;
+    if (playerLoses === 0){
+      if (!keyIsDown(UP_ARROW) && !keyIsDown(DOWN_ARROW)){
+        if(this.y > this.g) this.y-=15;
+        if(this.y < this.g) this.y+=15;
+      }
     }
   }
   display(){
@@ -265,14 +277,15 @@ class Food{
     this.type = type;
     this.x = -image.width;
     this.y = random(height - 150, 150);
-    this.speed = 100;
+    this.speed = 10;
   }
   display(){
     image(this.image, this.x, this.y);
   }
-  update() {
-    if (theMagnet){
+  update(){
+    if (theMagnet && this.type !== "obstacle"){
       if(this.x < sponge.x) this.x += this.speed *1.3;
+      if(this.x > sponge.x) this.x -= this.speed *1.3;
       if(this.y < sponge.y) this.y += this.speed *1.3;
       if(this.y > sponge.y) this.y -= this.speed *1.3;
     }
@@ -281,15 +294,15 @@ class Food{
         this.x += this.speed;
       }
     }
-    //this.speedUp();
+    this.speedUp();
   }
-  // speedUp(){
-  //   // increase speed of game element overtime
-  //   if (frameCount % 20 === 0 && this.speed < 40){
-  //     this.speed += speedIncrease;
-  //   }
-  // }
-  offscreen() {
+  speedUp(){
+  // increase speed of game element overtime
+     if (frameCount % 20 === 0 && this.speed < 40){
+       this.speed += speedIncrease;
+     }
+   }
+  offscreen(){
   return this.x > width; // returns true if offscreen
   }
 }
@@ -314,11 +327,6 @@ class Obstacle extends Food{
     //     this.y = random(lanes);
     //   }
     // }
-  }
-  update(){
-    if (playerLoses === 0){
-      this.x += this.speed;
-    }
   }
 }
 
@@ -369,8 +377,8 @@ function moveAndDisplayObstacles(){
     obstacles[i].update();
     //collide
     if (theShield === false){
-      if (collideRectRect(sponge.x + 63, sponge.y - 135, 170, 200,
-        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
+      if (collideRectRect(sponge.x + 65, sponge.y - 135, 170, 200,
+      obstacles[i].x, obstacles[i].y + 10, 337, 228)){
         playerLoses = 1;
       }
       if (obstacles[i].offscreen()) {
@@ -385,7 +393,8 @@ function moveAndDisplayCollectibles(){
     collectibles[i].display();
     collectibles[i].update();
     //collide
-    if (collideRectRect(sponge.x + 100, sponge.y - 80, 100, 80, collectibles[i].x, collectibles[i].y, 100, 82)){
+    if (collideRectRect(sponge.x + 65 , sponge.y - 135, 170, 150, 
+    collectibles[i].x, collectibles[i].y, 100, 82)){
       if (collectibles[i].type === "burger"){
         if (theDouble) score += 2;
         else score += 1; //increase burger score
@@ -404,10 +413,13 @@ function moveAndDisplayCollectibles(){
         theMagnet = true;
       }
       collectibles.splice(i, 1);
+      i --;
+      if (i<0) break;
     }
     // If collectible is off the screen, remove it from the array
-    if (collectibles[i].offscreen()) {
+    if (collectibles[i].offscreen()){
       collectibles.splice(i, 1);
+      i --;
     }
   }
 }
@@ -473,32 +485,36 @@ function mousePressed() {
   let menuWidth = width / 1.5;
   let menuHeight = height / 2.1;
   let buttonWidth = menuWidth - 100;
-  let buttonHeight = 60;
-  if (playerLoses === 2) {
-    if (
-      mouseX > menuX + 50 &&
-      mouseX < menuX + 50 + buttonWidth &&
-      mouseY > menuY + 130 &&
-      mouseY < menuY + 130 + buttonHeight
-    ) {
-      // Play again option
-      resetGame();
-    } else if (
-      mouseX > menuX + 50 &&
-      mouseX < menuX + 50 + buttonWidth &&
-      mouseY > menuY + 230 &&
-      mouseY < menuY + 230 + buttonHeight
-    ) {
-      // Shop option
-      shopClicked = true;
-      homeClicked = false; // Ensure only one shape is displayed at a time
-    } else if (
-      mouseX > menuX + 50 &&
-      mouseX < menuX + 50 + buttonWidth &&
-      mouseY > menuY + 330 &&
-      mouseY < menuY + 330 + buttonHeight
-    ) {
-      // Home option
+  let buttonHeight = 150;
+
+  // Check for mouse click on the pause icon
+  if (mouseX > 60 && mouseX < 115 && mouseY > 20 && mouseY < 80){
+    pauseMenu = true;
+  }
+  
+  if (
+    mouseX > menuX + 50 &&
+    mouseX < menuX + 50 + buttonWidth &&
+    mouseY > menuY + 130 &&
+    mouseY < menuY + 130 + buttonHeight
+  ) {
+    // Play again option
+    if (loseMenu) resetGame();
+    // resume option
+    else if (pauseMenu){
+      phase = 4;
+      pauseMenu === false;
+    }
+  }
+
+  else if (
+    mouseX > menuX + 50 &&
+    mouseX < menuX + 50 + buttonWidth &&
+    mouseY > menuY + 330 &&
+    mouseY < menuY + 330 + buttonHeight
+  ) {
+    // Home option
+    if(pauseMenu || loseMenu){
       homeClicked = true;
       shopClicked = false; // Ensure only one shape is displayed at a time
     }
@@ -519,25 +535,36 @@ function displayMenu() {
   text("You Lose!", width / 2, menuY + 70);
 
   let buttonWidth = menuWidth - 100;
-  let buttonHeight = 60;
+  let buttonHeight = 150;
 
+  textSize(70);
   fill(100, 200, 100);
   rect(menuX + 50, menuY + 130, buttonWidth, buttonHeight, 10);
-  fill(0);
-  textSize(48);
-  text("Play Again", menuX + buttonWidth / 2 + 50, menuY + 165);
-
-  fill(100, 200, 100);
-  rect(menuX + 50, menuY + 230, buttonWidth, buttonHeight, 10);
-  fill(0);
-  textSize(48);
-  text("Shop", menuX + buttonWidth / 2 + 50, menuY + 265);
-
-  fill(100, 200, 100);
   rect(menuX + 50, menuY + 330, buttonWidth, buttonHeight, 10);
   fill(0);
-  textSize(48);
-  text("Home", menuX + buttonWidth / 2 + 50, menuY + 365);
+  text("Play Again", menuX + buttonWidth / 2 + 50, menuY + 210);
+  text("Home", menuX + buttonWidth / 2 + 50, menuY + 410);
+}
+
+function displayPauseMenu() {
+  let menuX = width / 6;
+  let menuY = height / 4;
+  let menuWidth = width / 1.5;
+  let menuHeight = height / 2.1;
+
+  fill(50, 150, 200);
+  rect(menuX, menuY, menuWidth, menuHeight, 20);
+
+  let buttonWidth = menuWidth - 100;
+  let buttonHeight = 150;
+
+  textSize(70);
+  fill(100, 200, 100);
+  rect(menuX + 50, menuY + 130, buttonWidth, buttonHeight, 10);
+  rect(menuX + 50, menuY + 330, buttonWidth, buttonHeight, 10);
+  fill(0);
+  text("Resume", menuX + buttonWidth / 2 + 50, menuY + 210);
+  text("Quit", menuX + buttonWidth / 2 + 50, menuY + 410);
 }
 
 // Display a square for Shop option
@@ -559,6 +586,12 @@ function displayTriangle() {
     width / 2 - 50,
     height / 2 + 50
   );
+}
+
+function drawPauseIcon() {
+   fill(0);
+   rect(60, 20, 15, 60); // Vertical bar
+   rect(100, 20, 15, 60); // Vertical bar
 }
 
 function resetGame() {
@@ -592,4 +625,8 @@ function resetGame() {
   theDouble = false;
   theShield = false;
   theMagnet = false;
+
+  // Reset menues to false
+  loseMenu = false;
+  pauseMenu = false;
 }

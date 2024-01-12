@@ -3,17 +3,13 @@
 // Date
 
 // they are still overlapping
-// create certian lanes for collectibles.
-// why is it crashing when speed is increased
-// how to reset speed of game
-// new boss error
-// when I pause the game for too long, objects move very fast
+// why is it crashing when speed is increased.
+// when I pause the game for too long, objects move very fast.
 // speed is not really increasing since its increasing each object seperatly
 // boss circles appear suddenly
 
 //  menue
 let pausedTime = 0;
-let adjustedFrameCount = 0;
 let playerLoses = 0;
 // 0 is spongeBob is alive
 // 1 dispalys dying animation
@@ -37,12 +33,18 @@ let obstacles = [];
 let burgerImage;
 let jamImage;
 let rockImage;
-let collectiblesInterval = 50;
-let obstacleInterval = 100;
+//org is 50
+let collectiblesInterval = 12;
+//max is 40
+// org is 100
+let obstacleInterval = 200;
 let lanes = [0, 270, 270*2, 270*3];
 let spongeLane = 270;
 let jamInterval = 80;
 let speedIncrease = 0.1;
+// max is 30
+// org is 10
+let startSpeed = 30;
 
 // power ups
 let double = [];
@@ -78,6 +80,10 @@ let dyingFrame = 0;
 // count douwn animation
 let countDown = [];
 let countDownFrame = 0;
+
+// charcters
+let originalChar = true;
+let JellyChar = false;
 
 function preload() {
   bImage = loadImage("assets/backg1.png");
@@ -160,8 +166,20 @@ function draw() {
       displayMenu();
     }
   else{ 
-    //normal game code
-    adjustedFrameCount = frameCount - pausedTime;
+    // normal game code
+    if(playerLoses === 0 && pauseState === 0){
+      // increasing speed over time
+      if(frameCount % 50 === 0 && startSpeed <= 30){
+        startSpeed += speedIncrease;
+      }
+      // increasing intervals over time
+      if(frameCount % 50 === 0 && collectiblesInterval > 10){
+        collectiblesInterval += speedIncrease;
+      }
+      if(frameCount % 1000 === 0){
+        phase = 1;
+      }
+    }
     textAlign(LEFT, BASELINE);
     sponge.display();
     sponge.move();
@@ -195,8 +213,8 @@ function draw() {
       image(bossAnimation[int(frameCount/10) % 6], 0, 250);
       moveAndDisplayCircles();
       // check that game isn't paused or player lost
-      if(pauseState === 0 && pauseState === 0){
-        if (adjustedFrameCount % 70 === 0) {
+      if(playerLoses === 0 && pauseState === 0){
+        if (frameCount % 70 === 0) {
           circles.push(new MovingCircles());
         }
         bossTime++;
@@ -319,7 +337,6 @@ class Food{
     this.type = type;
     this.x = -image.width;
     this.y = random(height - 150, 150);
-    this.speed = 10;
   }
   display(){
     image(this.image, this.x, this.y);
@@ -335,16 +352,7 @@ class Food{
     }
     else{
       if (playerLoses === 0 && pauseState === 0){
-        this.x += this.speed;
-      }
-    }
-    this.speedUp();
-  }
-  speedUp(){
-  // increase speed of game element overtime
-    if(playerLoses === 0 && pauseState === 0){
-      if (frameCount % 20 === 0 && this.speed < 40){
-        this.speed += speedIncrease;
+        this.x += startSpeed;
       }
     }
   }
@@ -406,16 +414,20 @@ class MovingCircles{
 
 function moveAndDisplayCircles() {
   for (let i = circles.length - 1; i >= 0; i--) {
-    circles[i].update();
+
     circles[i].display();
-    //collide
-    if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
-      circles[i].x, circles[i].y, circles[i].radius * 2)){
-      playerLoses = 1;
+    if( playerLoses=== 0 && pauseState === 0){
+      circles[i].update();
+      //collide
+      if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
+        circles[i].x, circles[i].y, circles[i].radius * 2)){
+        playerLoses = 1;
+      }
+      if (circles[i].isOffScreen()) {
+        circles.splice(i, 1);
+      }
     }
-    if (circles[i].isOffScreen()) { //on eof the challengse
-      circles.splice(i, 1);
-    }
+    
   }
 }
 
@@ -701,6 +713,10 @@ function resetGame(){
   // Clearing arrays
   obstacles = [];
   collectibles = [];
+
+  // set back sstarting peed to 10
+  startSpeed = 10;
+  circles = [];
 
   //return spongeBob to the center
   sponge.x = width / 1.4;

@@ -7,9 +7,22 @@
 // why is it crashing when speed is increased
 // how to reset speed of game
 // new boss error
+// when I pause the game for too long, objects move very fast
+// speed is not really increasing since its increasing each object seperatly
+// boss circles appear suddenly
 
-// main menue
+//  menue
+let pausedTime = 0;
+let adjustedFrameCount = 0;
 let playerLoses = 0;
+// 0 is spongeBob is alive
+// 1 dispalys dying animation
+// 2 displays dying menu(home or replay)
+let pauseState = 0;
+// 0 is no pause menu
+// 1 is the count down after pressing resume
+// 2 display pause menu
+let loseMenu = false;
 let shopClicked = false; // Track if Shop option is clicked
 let homeClicked = false; // Track if Home option is clicked
 
@@ -17,6 +30,7 @@ let phase = 4;
 let sAnimation = []; // Array to hold sponge animation frames
 let bImage;  //background
 let bImage2;  // boss background
+let homeImage;
 let sponge;
 let collectibles = [];
 let obstacles = [];
@@ -40,7 +54,7 @@ let theMagnet = false;
 let doubleTime = 0;
 let shieldTime = 0;
 let magnetTime = 0;
-let powerInterval = 1000;
+let powerInterval = 500;
 
 // score and shop system
 let score = 0;
@@ -60,11 +74,10 @@ let villain;
 // spongebob's dying array
 let dying = [];
 let dyingFrame = 0; 
-let showDyingAnimation = true;
 
-// menu
-let loseMenu = false;
-let pauseMenu = false;
+// count douwn animation
+let countDown = [];
+let countDownFrame = 0;
 
 function preload() {
   bImage = loadImage("assets/backg1.png");
@@ -72,6 +85,7 @@ function preload() {
   burgerImage = loadImage("assets/4.png");
   jamImage = loadImage("assets/5.png");
   rockImage = loadImage("assets/rock.png");
+  homeImage = loadImage("assets/home.png");
   //spongebob animation
   for (let i = 0; i < 4; i++) {
     sAnimation.push(loadImage("assets/" + i + ".png"));
@@ -102,6 +116,10 @@ function preload() {
   for (let i = 0; i < 5; i++) {
     dying.push(loadImage("assets/dying/" + i + ".png"));
   }
+  // count down animation
+  for (let i = 3; i > 0; i--) {
+    countDown.push(loadImage("assets/count" + i + ".png"));
+  }
 }
 
 function setup() {
@@ -125,13 +143,14 @@ function draw() {
     drawPauseIcon();
   }
   if (playerLoses === 1){
-    if (showDyingAnimation && dyingFrame < dying.length * 10){
+    if (dyingFrame < dying.length * 10){
       // Display the dying animation for 40 frames
       image(dying[int(dyingFrame / 10) % dying.length], sponge.x, sponge.y - dying[0].height / 2, 306, 295);
       dyingFrame++;
     }
     else {
       playerLoses = 2;
+      dyingFrame = 0;
     }
   }
   if (playerLoses === 2){
@@ -139,48 +158,45 @@ function draw() {
       loseMenu = true;
       textAlign(CENTER, CENTER);
       displayMenu();
-      // Update scores for the shop system
-      overallScore = overallScore = score;
-      overallJamScore = overallJamScore + jamScore;
     }
   else{ 
-    // checking if game is paused
-    if (pauseMenu){
-      textAlign(CENTER, CENTER);
-      displayPauseMenu();
-    }
-    else{
-      //normal game code
-      textAlign(LEFT, BASELINE);
-      sponge.display();
-      sponge.move();
-      sponge.gravity();
-      fill(0);
-      textSize(60);
-      text(score, 1670, 90);
-      text(jamScore, 1670, 213);
-      pushingCollectibles();
-      moveAndDisplayCollectibles();
-      PowerupsTiming();
+    //normal game code
+    adjustedFrameCount = frameCount - pausedTime;
+    textAlign(LEFT, BASELINE);
+    sponge.display();
+    sponge.move();
+    sponge.gravity();
+    fill(0);
+    textSize(60);
+    text(score, 1670, 90);
+    text(jamScore, 1670, 213);
+    pushingCollectibles();
+    moveAndDisplayCollectibles();
+    PowerupsTiming();
 
-      if (phase === 1){
-        //clearing obstacles before boss enters
-        if(obstacles.length === 0){
-          image(startBoss[bossFrame], 0, 250);
+    if (phase === 1){
+      //clearing obstacles before boss enters
+      if(obstacles.length === 0){
+        image(startBoss[bossFrame], 0, 250);
+        // prevent boss from moving when game paused
+        if(playerLoses === 0 && pauseState === 0){
           if(frameCount%7===0)bossFrame++;
           if(bossFrame===7){
             bossTime = 0;
             phase = 2;
           }
         }
-        else moveAndDisplayObstacles(); //error
       }
+      else moveAndDisplayObstacles();
+    }
 
-      if (phase === 2){
-        //boss gameplay phase
-        image(bossAnimation[int(frameCount/10) % 6], 0, 250);
-        moveAndDisplayCircles();
-        if (frameCount % 70 === 0) {
+    if (phase === 2){
+      //boss gameplay phase
+      image(bossAnimation[int(frameCount/10) % 6], 0, 250);
+      moveAndDisplayCircles();
+      // check that game isn't paused or player lost
+      if(pauseState === 0 && pauseState === 0){
+        if (adjustedFrameCount % 70 === 0) {
           circles.push(new MovingCircles());
         }
         bossTime++;
@@ -189,14 +205,17 @@ function draw() {
           bossFrame = 0; 
         }
       }
+    }
 
-      if (phase === 3){
-        //end of boss
-        //check that all circles are gone
-        if (bossFrame < 7){
-          image(endBoss[bossFrame], 0, 250);
-          moveAndDisplayCircles();
-        }
+    if (phase === 3){
+      //end of boss
+      //check that all circles are gone
+      if (bossFrame < 7){
+        image(endBoss[bossFrame], 0, 250);
+        moveAndDisplayCircles();
+      }
+      // check that game isn't paused or player lost
+      if(playerLoses === 0 && pauseState === 0){
         if(frameCount%7===0)bossFrame++;
         if(bossFrame>=7){
           if (circles.length === 0){
@@ -206,14 +225,37 @@ function draw() {
           else moveAndDisplayCircles();
         }
       }
+    }
 
-      if (phase === 4){
-        // Add new obstacles at regular intervals
+    if (phase === 4){
+      // Add new obstacles at regular intervals
+      if(pauseState === 0){
         if (frameCount % obstacleInterval === 0) {
           obstacles.push(new Obstacle(rockImage, "obstacle"));
         }
-        moveAndDisplayObstacles();
+        pausedTime = 0; // Reset the paused time when the game is unpaused
       }
+      moveAndDisplayObstacles();
+    }
+
+    // checking if game is paused
+    if (pauseState === 2 && playerLoses === 0){
+      pausedTime = millis(); // Record the time when the game is paused
+      textAlign(CENTER, CENTER);
+      displayPauseMenu();
+    }
+    if (pauseState === 1){
+      if (countDownFrame < countDown.length * 15){
+        // Display the countDown animation for 40 frames
+        imageMode(CENTER);
+        image(countDown[int(countDownFrame / 15) % countDown.length], width/2, height/2);
+        countDownFrame++;
+        imageMode(CORNER);
+      }
+      else {
+        pauseState = 0;
+        countDownFrame = 0;
+      } 
     }
   }
 
@@ -223,7 +265,7 @@ function draw() {
   }
 
   if (homeClicked) {
-    displayTriangle();
+    displayHome();
   }
 }
 
@@ -234,7 +276,7 @@ class Character{
     this.g = height / 2;
   }
   move(){
-    if (playerLoses === 0){
+    if (playerLoses === 0 && pauseState === 0){
       if (keyIsDown(UP_ARROW) && this.y > 150) {
         this.y -= 20;
       }
@@ -262,7 +304,7 @@ class Character{
       image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
       if (theShield === true){
         noStroke();
-        fill(113, 72, 184, 225);
+        fill(252, 186, 3, 100);
         imageMode(CENTER);
         ellipse(this.x + 150, this.y, 320, 330);
         imageMode(CORNER);
@@ -283,14 +325,16 @@ class Food{
     image(this.image, this.x, this.y);
   }
   update(){
-    if (theMagnet && this.type !== "obstacle"){
+    if (theMagnet && playerLoses === 0 && pauseState === 0 && 
+      this.type !== "obstacle" && this.type !== "double" &&
+      this.type !== "shield" && this.type !== "magnet"){
       if(this.x < sponge.x) this.x += this.speed *1.3;
       if(this.x > sponge.x) this.x -= this.speed *1.3;
       if(this.y < sponge.y) this.y += this.speed *1.3;
       if(this.y > sponge.y) this.y -= this.speed *1.3;
     }
     else{
-      if (playerLoses === 0){
+      if (playerLoses === 0 && pauseState === 0){
         this.x += this.speed;
       }
     }
@@ -298,10 +342,12 @@ class Food{
   }
   speedUp(){
   // increase speed of game element overtime
-     if (frameCount % 20 === 0 && this.speed < 40){
-       this.speed += speedIncrease;
-     }
-   }
+    if(playerLoses === 0 && pauseState === 0){
+      if (frameCount % 20 === 0 && this.speed < 40){
+        this.speed += speedIncrease;
+      }
+    }
+  }
   offscreen(){
   return this.x > width; // returns true if offscreen
   }
@@ -339,10 +385,12 @@ class MovingCircles{
     this.time = random(100);
   }
   update() {
-    let n = noise(this.time);
-    this.x += this.speed;
-    this.y += map(n, 0, 1, -10, 10);
-    this.time += 0.01;
+    if (playerLoses === 0 && pauseState === 0){
+      let n = noise(this.time);
+      this.x += this.speed;
+      this.y += map(n, 0, 1, -10, 10);
+      this.time += 0.01;
+    }
   }
 
   display() {
@@ -396,12 +444,24 @@ function moveAndDisplayCollectibles(){
     if (collideRectRect(sponge.x + 65 , sponge.y - 135, 170, 150, 
     collectibles[i].x, collectibles[i].y, 100, 82)){
       if (collectibles[i].type === "burger"){
-        if (theDouble) score += 2;
-        else score += 1; //increase burger score
+        if (theDouble) {
+          score += 2;
+          overallScore +=2;
+        }
+        else{
+          score += 1; //increase burger score
+          overallScore += 1;
+        }
       }
       else if (collectibles[i].type === "jam"){
-        if (theDouble) jamScore += 2;
-        else jamScore += 1; //increase jam score
+        if (theDouble) {
+          jamScore += 2;
+          overallJamScore +=2;
+        }
+        else {
+          jamScore += 1; //increase jam score
+          overallJamScore +=1;
+        }
       }
       else if (collectibles[i].type === "double"){
         theDouble = true;
@@ -425,48 +485,51 @@ function moveAndDisplayCollectibles(){
 }
 
 function pushingCollectibles(){
-  // Add new burgers at regular intervals
-  if (frameCount % collectiblesInterval === 0) {
-    collectibles.push(new Food(burgerImage, "burger"));
-  }
-  // Add jams rarely
-  if(random(1000)< 1){
-    collectibles.push(new Food(jamImage, "jam"));
-  }
-  // Add powerups randomly
-  let randomNumber = Math.floor(random(0,4));
-  print(randomNumber);
-  if (frameCount % powerInterval=== 0 && randomNumber === 1){
-    collectibles.push(new Power(double, "double"));
-  }
-  if (frameCount % powerInterval === 0 && randomNumber === 2){
-    collectibles.push(new Power(shield, "shield"));
-  }
-  if (frameCount % 20 === 0 && randomNumber === 3){
-    collectibles.push(new Power(magnet, "magnet"));
+  if(pauseState === 0){
+    // Add new burgers at regular intervals
+    if (frameCount % collectiblesInterval === 0) {
+      collectibles.push(new Food(burgerImage, "burger"));
+    }
+    // Add jams rarely
+    if(random(1000)< 1){
+      collectibles.push(new Food(jamImage, "jam"));
+    }
+    // Add powerups randomly
+    let randomNumber = Math.floor(random(0,4));
+    if (frameCount % powerInterval=== 0 && randomNumber === 1){
+      collectibles.push(new Power(double, "double"));
+    }
+    if (frameCount % powerInterval === 0 && randomNumber === 2){
+      collectibles.push(new Power(shield, "shield"));
+    }
+    if (frameCount % powerInterval === 0 && randomNumber === 3){
+      collectibles.push(new Power(magnet, "magnet"));
+    }
   }
 }
 
 function PowerupsTiming(){
-  if(theDouble === true){
-    doubleTime ++;
-    if (doubleTime === 500){
-      theDouble = false;
-      doubleTime = 0;
+  if (playerLoses === 0 && pauseState === 0){
+    if(theDouble === true){
+      doubleTime ++;
+      if (doubleTime === 500){
+        theDouble = false;
+        doubleTime = 0;
+      }
     }
-  }
-  if(theShield === true){
-    shieldTime ++;
-    if (shieldTime === 500){
-      theShield = false;
-      shieldTime = 0;
+    if(theShield === true){
+      shieldTime ++;
+      if (shieldTime === 500){
+        theShield = false;
+        shieldTime = 0;
+      }
     }
-  }
-  if(theMagnet === true){
-    magnetTime ++;
-    if (magnetTime === 500){
-      theMagnet = false;
-      magnetTime = 0;
+    if(theMagnet === true){
+      magnetTime ++;
+      if (magnetTime === 500){
+        theMagnet = false;
+        magnetTime = 0;
+      }
     }
   }
 }
@@ -480,6 +543,7 @@ function keyPressed(){
 }
 
 function mousePressed() {
+  // lose and pause menu variables
   let menuX = width / 6;
   let menuY = height / 4;
   let menuWidth = width / 1.5;
@@ -489,9 +553,9 @@ function mousePressed() {
 
   // Check for mouse click on the pause icon
   if (mouseX > 60 && mouseX < 115 && mouseY > 20 && mouseY < 80){
-    pauseMenu = true;
+    pauseState = 2;
   }
-  
+
   if (
     mouseX > menuX + 50 &&
     mouseX < menuX + 50 + buttonWidth &&
@@ -501,9 +565,8 @@ function mousePressed() {
     // Play again option
     if (loseMenu) resetGame();
     // resume option
-    else if (pauseMenu){
-      phase = 4;
-      pauseMenu === false;
+    else if (pauseState === 2){
+      pauseState = 1;
     }
   }
 
@@ -514,10 +577,42 @@ function mousePressed() {
     mouseY < menuY + 330 + buttonHeight
   ) {
     // Home option
-    if(pauseMenu || loseMenu){
+    if(pauseState === 2 || loseMenu){
       homeClicked = true;
       shopClicked = false; // Ensure only one shape is displayed at a time
     }
+  }
+
+  // Home screen menu variables
+  let playRectX = width / 12;
+  let playRectY = height / 2.5;
+  let shopRectX = width / 12;
+  let shopRectY = height / 2.5 + 170;
+  let rectWidth = 300;
+  let rectHeight = 150;
+
+  // Check for mouse click on "Play" rectangle
+  if (
+    mouseX > playRectX &&
+    mouseX < playRectX + rectWidth &&
+    mouseY > playRectY &&
+    mouseY < playRectY + rectHeight
+  ) {
+    resetGame();
+    homeClicked = false;
+    shopClicked = false;
+  }
+
+  // Check for mouse click on "Shop" rectangle
+  if (
+    mouseX > shopRectX &&
+    mouseX < shopRectX + rectWidth &&
+    mouseY > shopRectY &&
+    mouseY < shopRectY + rectHeight
+  ) {
+    // Handle "Shop" button click
+    // Add your code for "Shop" button action here
+    console.log("Shop button clicked!");
   }
 }
 
@@ -567,25 +662,33 @@ function displayPauseMenu() {
   text("Quit", menuX + buttonWidth / 2 + 50, menuY + 410);
 }
 
-// Display a square for Shop option
 function displaySquare() {
   background(240);
   fill(100, 200, 100);
   rect(width / 2 - 50, height / 2 - 50, 100, 100);
 }
 
-// Display a triangle for Home option
-function displayTriangle() {
-  background(240);
-  fill(100, 200, 100);
-  triangle(
-    width / 2,
-    height / 2 - 50,
-    width / 2 + 50,
-    height / 2 + 50,
-    width / 2 - 50,
-    height / 2 + 50
-  );
+function displayHome() {
+  imageMode(CENTER);
+  image(homeImage, width / 2, height / 2);
+  imageMode(CORNER);
+  textAlign(LEFT, BASELINE);
+  fill(0);
+  textSize(60);
+  text(overallScore, 1670, 90);
+  text(overallJamScore, 1670, 213);
+
+  // Dark purple rectangles
+  fill(75, 0, 130); // Dark purple color
+  rect(width / 12, height / 2.5, 300, 150, 10); // Top rectangle
+  rect(width / 12, height / 2.5 + 170, 300, 150, 10); // Bottom rectangle
+
+  // Text on rectangles
+  fill(255);
+  textSize(70);
+  textAlign(CENTER, CENTER);
+  text("Play", width / 12 + 150, height / 2.5 + 75); // "Play" text
+  text("Shop", width / 12 + 150, height / 2.5 + 245); // "Shop" text
 }
 
 function drawPauseIcon() {
@@ -594,7 +697,7 @@ function drawPauseIcon() {
    rect(100, 20, 15, 60); // Vertical bar
 }
 
-function resetGame() {
+function resetGame(){
   // Clearing arrays
   obstacles = [];
   collectibles = [];
@@ -603,23 +706,15 @@ function resetGame() {
   sponge.x = width / 1.4;
   sponge.y = height / 2;
 
-  //reset speed of game
-
-
   // Start a new game
   phase = 4;
   score = 0;
   jamScore = 0;
-  overallScore = 0;
-  overallJamScore = 0;
   playerLoses = 0;
+  countDownFrame = 0; // Reset count down
   bossFrame = 0; // reset boos animation frames
   shopClicked = false; // Reset Shop click state
   homeClicked = false; // Reset Home click state
-
-  // Reset dying animation variables
-  showDyingAnimation = true;
-  dyingFrame = 0;
 
   // Reset powerUps to false
   theDouble = false;
@@ -628,5 +723,5 @@ function resetGame() {
 
   // Reset menues to false
   loseMenu = false;
-  pauseMenu = false;
+  pauseState = 0;
 }

@@ -17,9 +17,6 @@
     //similar to the one in powerUps
 // why is setting power ups true in glolbal doesn't work
 // increase intervals over time was causing the problem of no burgurs showing up
-// background is getting changed while paused
-// why are the obstacles dispaering when spongebob dies
-// why is you dont havrer enough deleting values?
 
 
 //  menue
@@ -69,7 +66,6 @@ let collectiblesInterval = 50;
 let obstacleInterval = 100;
 let lanes = [0, 270, 270*2, 270*3];
 let spongeLane = 270;
-let jamInterval = 80;
 let speedIncrease = 0.1;
 // max is 25 
 // org is 10
@@ -80,12 +76,12 @@ let double = [];
 let shield = [];
 let magnet = [];
 let theDouble = false;
-let theShield = false;
+let theShield = true;
 let theMagnet = false;
 let doubleTime = 0;
 let shieldTime = 0;
 let magnetTime = 0;
-let powerInterval = 600;
+let powerInterval = 500;
 
 // score and shop system
 let score = 0;
@@ -230,6 +226,17 @@ function draw() {
         startSpeed += speedIncrease;
       }
       // increasing intervals over time
+      if(frameCount % 50 === 0  && collectiblesInterval <= 10){
+        collectiblesInterval -= 1;
+      }
+
+      if(frameCount % 50 === 0  && collectiblesInterval <= 10){
+        collectiblesInterval -= 1;
+      }
+      
+      if(frameCount % 50 === 0  && obstacleInterval <= 30){
+        obstacleInterval -= 1;
+      }
     }
     if (gamePlay === true){
       textAlign(LEFT, BASELINE);
@@ -242,6 +249,7 @@ function draw() {
       text(jamScore, 1670, 213);
       pushingCollectibles();
       moveAndDisplayCollectibles();
+      moveAndDisplayObstacles();
       PowerupsTiming();
     }
 
@@ -258,7 +266,6 @@ function draw() {
           }
         }
       }
-      else moveAndDisplayObstacles();
     }
 
     if (phase === 2){
@@ -304,12 +311,11 @@ function draw() {
         phase = 1;
       }
       // Add new obstacles at regular intervals
-      if(pauseState === 0){
+      if (pauseState === 0){
         if (frameCount % obstacleInterval === 0) {
           obstacles.push(new Obstacle(rockImage, "obstacle"));
         }
       }
-      moveAndDisplayObstacles();
     }
 
     // checking if game is paused
@@ -502,6 +508,10 @@ function moveAndDisplayCircles() {
     circles[i].display();
     if( playerLoses=== 0 && pauseState === 0){
       circles[i].update();
+      if (circles[i].isOffScreen()) {
+        circles.splice(i, 1);
+        continue;
+      }
       //collide
       if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
         circles[i].x, circles[i].y, circles[i].radius * 2)){
@@ -509,12 +519,7 @@ function moveAndDisplayCircles() {
         if (theShield === true){
           theShield = false;
           circles.splice(i, 1);
-          i--;
         }
-      }
-      if (circles[i].isOffScreen()) {
-        circles.splice(i, 1);
-        i--;
       }
     }
   }
@@ -524,6 +529,10 @@ function moveAndDisplayObstacles(){
   for (let i = obstacles.length - 1; i >= 0; i--) {
     obstacles[i].display();
     obstacles[i].update();
+    if (obstacles[i].offscreen()) {
+      obstacles.splice(i, 1);
+      continue;
+    }
     //collide
     //player loses if there shield is off
     //shield is gone and obstacle is deleted if shiels is on
@@ -534,6 +543,7 @@ function moveAndDisplayObstacles(){
         if (theShield === true){
           theShield = false; 
           obstacles.splice(i, 1);
+          continue;
         }
       }
     }
@@ -545,19 +555,9 @@ function moveAndDisplayObstacles(){
         if (theShield === true){
           theShield = false; 
           obstacles.splice(i, 1);
+          continue;
         }
       }
-      if (collideRectRect(sponge.x + 48, sponge.y - 80, 230, 160,
-        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
-        if (theShield === false) playerLoses = 1;
-        if (theShield === true){
-          theShield = false; 
-          obstacles.splice(i, 1);
-        }
-      }
-    }
-    if (obstacles[i].offscreen()) {
-      obstacles.splice(i, 1);
     }
   }
 }
@@ -566,6 +566,11 @@ function moveAndDisplayCollectibles(){
   for (let i = collectibles.length - 1; i >= 0; i--) {
     collectibles[i].display();
     collectibles[i].update();
+    // If collectible is off the screen, remove it from the array
+    if (collectibles[i].offscreen()){
+      collectibles.splice(i, 1);
+      continue; 
+    }
     //collide
     let spongeX;
     let spongeY;
@@ -615,13 +620,6 @@ function moveAndDisplayCollectibles(){
         theMagnet = true;
       }
       collectibles.splice(i, 1);
-      i --;
-      if (i<0) break;
-    }
-    // If collectible is off the screen, remove it from the array
-    if (collectibles[i].offscreen()){
-      collectibles.splice(i, 1);
-      i --;
     }
   }
 }

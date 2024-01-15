@@ -2,14 +2,27 @@
 // Raghad Ibrahim
 // Date
 
+// recommendation: 
+// 1) make spongebob eat the burgur if it touches any part of his body
+// instead of only touching his mouth.
+// 2) make the shield disapear if spogebob hit an obstacle
+// and the obstacle should disapear as well.
+
+
 // they are still overlapping
 // why is it crashing when speed is increased.
-// when I pause the game for too long, objects move very fast.
-// speed is not really increasing since its increasing each object seperatly
-// boss circles appear suddenly
+// width is not defined with boss when speed is increased
+// boss is aperaing way too frequently?
+    //a solution could be creating a time variable from boss to start
+    //similar to the one in powerUps
+// why is setting power ups true in glolbal doesn't work
+// increase intervals over time was causing the problem of no burgurs showing up
+// background is getting changed while paused
+// why are the obstacles dispaering when spongebob dies
+// why is you dont havrer enough deleting values?
+
 
 //  menue
-let pausedTime = 0;
 let playerLoses = 0;
 // 0 is spongeBob is alive
 // 1 dispalys dying animation
@@ -19,32 +32,48 @@ let pauseState = 0;
 // 1 is the count down after pressing resume
 // 2 display pause menu
 let loseMenu = false;
+let gamePlay = false;
+let homeClicked = true; // Track if Home option is clicked
 let shopClicked = false; // Track if Shop option is clicked
-let homeClicked = false; // Track if Home option is clicked
+let purchased = false;
 
+// images and animations
 let phase = 4;
-let sAnimation = []; // Array to hold sponge animation frames
+let sAnimation = [];
+let jellyAnimation = [];
 let bImage;  //background
 let bImage2;  // boss background
 let homeImage;
+let shopImage;
 let sponge;
 let collectibles = [];
 let obstacles = [];
 let burgerImage;
 let jamImage;
 let rockImage;
+
+// shop variables
+let values;
+let shopCharacters;
+let originalRect = true;
+let jellyRect = false;
+let notEnough;
+let burgerValue = 3;
+let jamValue = 0; 
+
+//max is 10
 //org is 50
-let collectiblesInterval = 12;
-//max is 40
+let collectiblesInterval = 50;
+// max is 30
 // org is 100
-let obstacleInterval = 200;
+let obstacleInterval = 100;
 let lanes = [0, 270, 270*2, 270*3];
 let spongeLane = 270;
 let jamInterval = 80;
 let speedIncrease = 0.1;
-// max is 30
+// max is 25 
 // org is 10
-let startSpeed = 30;
+let startSpeed = 10;
 
 // power ups
 let double = [];
@@ -56,7 +85,7 @@ let theMagnet = false;
 let doubleTime = 0;
 let shieldTime = 0;
 let magnetTime = 0;
-let powerInterval = 500;
+let powerInterval = 600;
 
 // score and shop system
 let score = 0;
@@ -74,8 +103,9 @@ let bossFrame = 0;
 let villain;
 
 // spongebob's dying array
-let dying = [];
-let dyingFrame = 0; 
+let dying = []; 
+let dying2 = [];
+let dyingFrame = 0;
 
 // count douwn animation
 let countDown = [];
@@ -83,7 +113,7 @@ let countDownFrame = 0;
 
 // charcters
 let originalChar = true;
-let JellyChar = false;
+let jellyChar = false;
 
 function preload() {
   bImage = loadImage("assets/backg1.png");
@@ -92,9 +122,18 @@ function preload() {
   jamImage = loadImage("assets/5.png");
   rockImage = loadImage("assets/rock.png");
   homeImage = loadImage("assets/home.png");
+  shopImage = loadImage("assets/shop.png");
+  shopCharacters = loadImage("assets/shopCharacters.png");
+  values = loadImage("assets/values.png");
+  notEnough = loadImage("assets/notEnough.png");
+
   //spongebob animation
   for (let i = 0; i < 4; i++) {
     sAnimation.push(loadImage("assets/" + i + ".png"));
+  }
+  //spongebob riding jellyFish animation
+  for (let i = 0; i < 3; i++) {
+    jellyAnimation.push(loadImage("assets/jellychar/" + i + ".png"));
   }
   //boss entrance animation
   for (let i = 0; i < 7; i++) {
@@ -122,6 +161,10 @@ function preload() {
   for (let i = 0; i < 5; i++) {
     dying.push(loadImage("assets/dying/" + i + ".png"));
   }
+  // dying animation
+  for (let i = 0; i < 5; i++) {
+    dying2.push(loadImage("assets/dying2/" + i + ".png"));
+  }
   // count down animation
   for (let i = 3; i > 0; i--) {
     countDown.push(loadImage("assets/count" + i + ".png"));
@@ -148,10 +191,23 @@ function draw() {
     imageMode(CORNER);
     drawPauseIcon();
   }
-  if (playerLoses === 1){
+  // character 1
+  if (playerLoses === 1 && originalChar === true){
     if (dyingFrame < dying.length * 10){
       // Display the dying animation for 40 frames
       image(dying[int(dyingFrame / 10) % dying.length], sponge.x, sponge.y - dying[0].height / 2, 306, 295);
+      dyingFrame++;
+    }
+    else {
+      playerLoses = 2;
+      dyingFrame = 0;
+    }
+  }
+  // character 2
+  if (playerLoses === 1 && jellyChar === true){
+    if (dyingFrame < dying2.length * 10){
+      // Display the dying animation for 50 frames
+      image(dying2[int(dyingFrame / 10) % dying2.length], sponge.x, (sponge.y - dying[0].height / 2) - 60);
       dyingFrame++;
     }
     else {
@@ -165,6 +221,7 @@ function draw() {
       textAlign(CENTER, CENTER);
       displayMenu();
     }
+
   else{ 
     // normal game code
     if(playerLoses === 0 && pauseState === 0){
@@ -173,27 +230,23 @@ function draw() {
         startSpeed += speedIncrease;
       }
       // increasing intervals over time
-      if(frameCount % 50 === 0 && collectiblesInterval > 10){
-        collectiblesInterval += speedIncrease;
-      }
-      if(frameCount % 1000 === 0){
-        phase = 1;
-      }
     }
-    textAlign(LEFT, BASELINE);
-    sponge.display();
-    sponge.move();
-    sponge.gravity();
-    fill(0);
-    textSize(60);
-    text(score, 1670, 90);
-    text(jamScore, 1670, 213);
-    pushingCollectibles();
-    moveAndDisplayCollectibles();
-    PowerupsTiming();
+    if (gamePlay === true){
+      textAlign(LEFT, BASELINE);
+      sponge.display();
+      sponge.move();
+      sponge.gravity();
+      fill(0);
+      textSize(60);
+      text(score, 1670, 90);
+      text(jamScore, 1670, 213);
+      pushingCollectibles();
+      moveAndDisplayCollectibles();
+      PowerupsTiming();
+    }
 
     if (phase === 1){
-      //clearing obstacles before boss enters
+      //clearing obstacles before boss enters 
       if(obstacles.length === 0){
         image(startBoss[bossFrame], 0, 250);
         // prevent boss from moving when game paused
@@ -245,20 +298,22 @@ function draw() {
       }
     }
 
-    if (phase === 4){
+    if (phase === 4 && pauseState === 0 && playerLoses === 0){
+      // boss apears every 2000 frames
+      if(frameCount % 2000 === 0){
+        phase = 1;
+      }
       // Add new obstacles at regular intervals
       if(pauseState === 0){
         if (frameCount % obstacleInterval === 0) {
           obstacles.push(new Obstacle(rockImage, "obstacle"));
         }
-        pausedTime = 0; // Reset the paused time when the game is unpaused
       }
       moveAndDisplayObstacles();
     }
 
     // checking if game is paused
     if (pauseState === 2 && playerLoses === 0){
-      pausedTime = millis(); // Record the time when the game is paused
       textAlign(CENTER, CENTER);
       displayPauseMenu();
     }
@@ -279,7 +334,7 @@ function draw() {
 
   //main menu
   if (shopClicked) {
-    displaySquare();
+    displayShop();
   }
 
   if (homeClicked) {
@@ -295,11 +350,25 @@ class Character{
   }
   move(){
     if (playerLoses === 0 && pauseState === 0){
-      if (keyIsDown(UP_ARROW) && this.y > 150) {
-        this.y -= 20;
+      if (originalChar === true){
+        if (keyIsDown(UP_ARROW) && this.y > 150) {
+          this.y -= 20;
+        }
       }
-      if (keyIsDown(DOWN_ARROW) && this.y < height - 150) {
-        this.y += 20;
+      if (jellyChar === true){
+        if (keyIsDown(UP_ARROW) && this.y > 200) {
+          this.y -= 20;
+        }
+      }
+      if (originalChar === true){
+        if (keyIsDown(DOWN_ARROW) && this.y < height - 150) {
+          this.y += 20;
+        }
+      }
+      if (jellyChar === true){
+        if (keyIsDown(DOWN_ARROW) && this.y < height - 110) {
+          this.y += 20;
+        }
       }
       if (keyIsDown(RIGHT_ARROW) && this.x < width / 1.4) {
         this.x += 20;
@@ -319,13 +388,27 @@ class Character{
   }
   display(){
     if (playerLoses === 0){
-      image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
+      if (originalChar === true){
+        image(sAnimation[int(frameCount/10) % 4], this.x, this.y-sAnimation[0].height/2, 306, 295);
+      }
+      else if (jellyChar === true){
+        image(jellyAnimation[int(frameCount/10) % 3], this.x, this.y-jellyAnimation[0].height/2);
+      }
       if (theShield === true){
-        noStroke();
-        fill(252, 186, 3, 100);
-        imageMode(CENTER);
-        ellipse(this.x + 150, this.y, 320, 330);
-        imageMode(CORNER);
+        if (originalChar === true){
+          noStroke();
+          fill(252, 186, 3, 100);
+          imageMode(CENTER);
+          ellipse(this.x + 150, this.y, 400, 400);
+          imageMode(CORNER);
+        }
+        if (jellyChar === true){
+          noStroke();
+          fill(252, 186, 3, 100);
+          imageMode(CENTER);
+          ellipse(this.x + 185, this.y, 450, 450);
+          imageMode(CORNER);
+        }
       }
     }
   }
@@ -345,10 +428,12 @@ class Food{
     if (theMagnet && playerLoses === 0 && pauseState === 0 && 
       this.type !== "obstacle" && this.type !== "double" &&
       this.type !== "shield" && this.type !== "magnet"){
-      if(this.x < sponge.x) this.x += this.speed *1.3;
-      if(this.x > sponge.x) this.x -= this.speed *1.3;
-      if(this.y < sponge.y) this.y += this.speed *1.3;
-      if(this.y > sponge.y) this.y -= this.speed *1.3;
+      if(this.x < sponge.x) this.x += startSpeed *1.5;
+      if(this.x > sponge.x) this.x -= startSpeed *1.5;
+      if (this.x  >= sponge.x - 250){
+        if(this.y < sponge.y) this.y += startSpeed *1.5;
+        if(this.y > sponge.y) this.y -= startSpeed *1.5;
+      }
     }
     else{
       if (playerLoses === 0 && pauseState === 0){
@@ -375,12 +460,12 @@ class Obstacle extends Food{
   constructor(image, type){
     super(image, type);
     this.y = random(lanes);
-    // if(collectibles.length > 0){
-    //   while(collideRectRect(this.x, this.y, 337, 228, 
-    //   collectibles[collectibles.length-1].x, collectibles[collectibles.length-1].y, 100, 82)){
-    //     this.y = random(lanes);
-    //   }
-    // }
+    if(collectibles.length > 0){
+      while(collideRectRect(this.x, this.y, 337, 228, 
+      collectibles[collectibles.length-1].x, collectibles[collectibles.length-1].y, 100, 82)){
+        this.y = random(lanes);
+      }
+    }
   }
 }
 
@@ -414,20 +499,24 @@ class MovingCircles{
 
 function moveAndDisplayCircles() {
   for (let i = circles.length - 1; i >= 0; i--) {
-
     circles[i].display();
     if( playerLoses=== 0 && pauseState === 0){
       circles[i].update();
       //collide
       if (collideRectCircle(sponge.x + 63, sponge.y - 135, 170, 200,
         circles[i].x, circles[i].y, circles[i].radius * 2)){
-        playerLoses = 1;
+        if (theShield === false) playerLoses = 1;
+        if (theShield === true){
+          theShield = false;
+          circles.splice(i, 1);
+          i--;
+        }
       }
       if (circles[i].isOffScreen()) {
         circles.splice(i, 1);
+        i--;
       }
     }
-    
   }
 }
 
@@ -436,14 +525,39 @@ function moveAndDisplayObstacles(){
     obstacles[i].display();
     obstacles[i].update();
     //collide
-    if (theShield === false){
+    //player loses if there shield is off
+    //shield is gone and obstacle is deleted if shiels is on
+    if (originalChar === true){
       if (collideRectRect(sponge.x + 65, sponge.y - 135, 170, 200,
-      obstacles[i].x, obstacles[i].y + 10, 337, 228)){
-        playerLoses = 1;
+        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
+        if (theShield === false) playerLoses = 1;
+        if (theShield === true){
+          theShield = false; 
+          obstacles.splice(i, 1);
+        }
       }
-      if (obstacles[i].offscreen()) {
-        obstacles.splice(i, 1);
+    }
+
+    if (jellyChar === true){
+      if (collideRectRect(sponge.x + 110, sponge.y - 180, 160, 240,
+        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
+        if (theShield === false) playerLoses = 1;
+        if (theShield === true){
+          theShield = false; 
+          obstacles.splice(i, 1);
+        }
       }
+      if (collideRectRect(sponge.x + 48, sponge.y - 80, 230, 160,
+        obstacles[i].x, obstacles[i].y + 10, 337, 228)){
+        if (theShield === false) playerLoses = 1;
+        if (theShield === true){
+          theShield = false; 
+          obstacles.splice(i, 1);
+        }
+      }
+    }
+    if (obstacles[i].offscreen()) {
+      obstacles.splice(i, 1);
     }
   }
 }
@@ -453,8 +567,24 @@ function moveAndDisplayCollectibles(){
     collectibles[i].display();
     collectibles[i].update();
     //collide
-    if (collideRectRect(sponge.x + 65 , sponge.y - 135, 170, 150, 
-    collectibles[i].x, collectibles[i].y, 100, 82)){
+    let spongeX;
+    let spongeY;
+    let spongeCollideW;
+    let spongeCollideH;
+    if (originalChar === true){
+      spongeX = sponge.x + 65;
+      spongeY = sponge.y - 135;
+      spongeCollideW = 170;
+      spongeCollideH = 230;
+    }
+    else if (jellyChar === true){
+      spongeX = sponge.x + 45;
+      spongeY = sponge.y - 180;
+      spongeCollideW = 240;
+      spongeCollideH = 300;
+    }
+    if (collideRectRect(spongeX , spongeY, spongeCollideW, 
+      spongeCollideH, collectibles[i].x, collectibles[i].y, 100, 82)){
       if (collectibles[i].type === "burger"){
         if (theDouble) {
           score += 2;
@@ -548,13 +678,17 @@ function PowerupsTiming(){
 
 function keyPressed(){
   if (keyCode === 49) phase = 1;
-  if (keyCode === 50) phase = 2;
-  if (keyCode === 51) phase = 3;
-  if (keyCode === 52) phase = 4;
-  if (keyCode === 53) phase = 5;
+  if (keyCode === 50){
+    jellyChar = false;
+    originalChar = true;
+  }
+  if (keyCode === 51){
+    jellyChar = true;
+    originalChar = false;
+  }
 }
 
-function mousePressed() {
+function mousePressed(){
   // lose and pause menu variables
   let menuX = width / 6;
   let menuY = height / 4;
@@ -563,68 +697,114 @@ function mousePressed() {
   let buttonWidth = menuWidth - 100;
   let buttonHeight = 150;
 
-  // Check for mouse click on the pause icon
-  if (mouseX > 60 && mouseX < 115 && mouseY > 20 && mouseY < 80){
-    pauseState = 2;
-  }
+  if (gamePlay === true){
+    // Check for mouse click on the pause icon
+    if (mouseX > 60 && mouseX < 115 && mouseY > 20 && mouseY < 80){
+      pauseState = 2;
+    }
 
-  if (
-    mouseX > menuX + 50 &&
-    mouseX < menuX + 50 + buttonWidth &&
-    mouseY > menuY + 130 &&
-    mouseY < menuY + 130 + buttonHeight
-  ) {
-    // Play again option
-    if (loseMenu) resetGame();
-    // resume option
-    else if (pauseState === 2){
-      pauseState = 1;
+    if (
+      mouseX > menuX + 50 &&
+      mouseX < menuX + 50 + buttonWidth &&
+      mouseY > menuY + 130 &&
+      mouseY < menuY + 130 + buttonHeight){
+      // Play again option
+      if (loseMenu) resetGame();
+      // resume option
+      else if (pauseState === 2){
+        pauseState = 1;
+      }
+    }
+
+    else if (
+      mouseX > menuX + 50 &&
+      mouseX < menuX + 50 + buttonWidth &&
+      mouseY > menuY + 330 &&
+      mouseY < menuY + 330 + buttonHeight){
+      // Home option
+      if(pauseState === 2 || loseMenu){
+        homeClicked = true;
+        shopClicked = false; // Ensure only one shape is displayed at a time
+        gamePlay = false;
+      }
     }
   }
 
-  else if (
-    mouseX > menuX + 50 &&
-    mouseX < menuX + 50 + buttonWidth &&
-    mouseY > menuY + 330 &&
-    mouseY < menuY + 330 + buttonHeight
-  ) {
-    // Home option
-    if(pauseState === 2 || loseMenu){
+  if (homeClicked === true){
+    // Home screen menu variables
+    let playRectX = width / 12;
+    let playRectY = height / 2.5;
+    let shopRectX = width / 12;
+    let shopRectY = height / 2.5 + 170;
+    let rectWidth = 300;
+    let rectHeight = 150;
+
+    // Check for mouse click on "Play" rectangle
+    if (
+      mouseX > playRectX &&
+      mouseX < playRectX + rectWidth &&
+      mouseY > playRectY &&
+      mouseY < playRectY + rectHeight){
+      resetGame();
+      homeClicked = false;
+      shopClicked = false;
+      gamePlay = true;
+    }
+
+    // Check for mouse click on "Shop" rectangle
+    if (
+      mouseX > shopRectX &&
+      mouseX < shopRectX + rectWidth &&
+      mouseY > shopRectY &&
+      mouseY < shopRectY + rectHeight){
+      homeClicked = false;
+      shopClicked = true;
+      gamePlay = false;
+    }
+  }
+
+  if (shopClicked === true){
+    let rectWidth = 500;
+    let rectHeight = 600;
+    let spaceBetween = 100;
+    let centerX = width / 2;
+    let leftRectX = centerX - rectWidth - spaceBetween / 2;
+    let rightRectX = centerX + spaceBetween / 2;
+
+    // Check if the mouse is inside the left rectangle
+    if (
+      mouseX >= leftRectX &&
+      mouseX <= leftRectX + rectWidth &&
+      mouseY >= height / 4 &&
+      mouseY <= height / 4 + rectHeight){
+      print("yes");
+      if (purchased === true){
+        jellyRect = true;
+        originalRect = false; 
+        jellyChar = true;
+        originalChar = false;
+      }
+    }
+
+    // Check if the mouse is inside the right rectangle
+    if (
+      mouseX >= rightRectX &&
+      mouseX <= rightRectX + rectWidth &&
+      mouseY >= height / 4 &&
+      mouseY <= height / 4 + rectHeight){
+        print("no");
+        originalRect = true;
+        jellyRect = false; 
+        originalChar = true;
+        jellyChar = false;
+    }
+
+    // Check if the mouse is inside the "Home" button
+    if (mouseX > 30 && mouseX < 230 && mouseY > 10 && mouseY < 110){
       homeClicked = true;
-      shopClicked = false; // Ensure only one shape is displayed at a time
+      shopClicked = false;
+      gamePlay = false;
     }
-  }
-
-  // Home screen menu variables
-  let playRectX = width / 12;
-  let playRectY = height / 2.5;
-  let shopRectX = width / 12;
-  let shopRectY = height / 2.5 + 170;
-  let rectWidth = 300;
-  let rectHeight = 150;
-
-  // Check for mouse click on "Play" rectangle
-  if (
-    mouseX > playRectX &&
-    mouseX < playRectX + rectWidth &&
-    mouseY > playRectY &&
-    mouseY < playRectY + rectHeight
-  ) {
-    resetGame();
-    homeClicked = false;
-    shopClicked = false;
-  }
-
-  // Check for mouse click on "Shop" rectangle
-  if (
-    mouseX > shopRectX &&
-    mouseX < shopRectX + rectWidth &&
-    mouseY > shopRectY &&
-    mouseY < shopRectY + rectHeight
-  ) {
-    // Handle "Shop" button click
-    // Add your code for "Shop" button action here
-    console.log("Shop button clicked!");
   }
 }
 
@@ -674,11 +854,85 @@ function displayPauseMenu() {
   text("Quit", menuX + buttonWidth / 2 + 50, menuY + 410);
 }
 
-function displaySquare() {
-  background(240);
-  fill(100, 200, 100);
-  rect(width / 2 - 50, height / 2 - 50, 100, 100);
+function displayShop() {
+  imageMode(CENTER);
+  textAlign(LEFT, BASELINE);
+  let rectWidth = 500;
+  let rectHeight = 600;
+  let spaceBetween = 100;
+  let centerX = width / 2;
+  let leftRectX = centerX - rectWidth - spaceBetween / 2;
+  let rightRectX = centerX + spaceBetween / 2;
+  image(shopImage, width / 2, height / 2);
+
+  // Draw left rectangle
+  noStroke();
+  fill(255, 255, 255, 100);
+  rect(leftRectX, height / 4, rectWidth, rectHeight, 10);
+
+  // Draw right rectangle
+  fill(255, 255, 255, 100);
+  rect(rightRectX, height / 4, rectWidth, rectHeight, 10);
+
+  // Draw characters and values
+  image(shopCharacters, width/2, height/2);
+
+  // display when doesn't have enough money
+  if(overallScore < burgerValue || overallJamScore < jamValue){
+    image(notEnough, width/2, height/2 );
+  }
+  
+  if (keyCode === SHIFT){
+    if(overallScore >= burgerValue && overallJamScore >= jamValue){
+      purchased = true;
+      overallScore = overallScore - burgerValue;
+      overallJamScore = overallJamScore - jamValue;
+      burgerValue = 0;
+      jamValue = 0;
+    }
+  }
+
+  if(purchased === false){
+    image(values, width/2, height/2);
+    // Dispaly values
+    fill(0);
+    strokeWeight(0);
+    textSize(35);
+    text(burgerValue, 800, 770);
+    text(jamValue, 800, 845);
+  }
+
+  // Draw a square highlighting chosen Character
+  if (jellyRect === true){
+    noFill();
+    stroke(0);
+    strokeWeight(10);
+    rect(leftRectX, height / 4, rectWidth, rectHeight)
+  }
+  if (originalRect === true){
+    noFill();
+    stroke(0);
+    strokeWeight(10);
+    rect(rightRectX, height / 4, rectWidth, rectHeight)
+  }
+
+  // home botton
+  strokeWeight(0);
+  fill(255);
+  rect(30, 10, 200, 100, 5);
+  fill(0);
+  textSize(45);
+  strokeWeight(3);
+  text("Home", 70, 70);
+
+  // Display the overallScore and overallJamScore
+  fill(0);
+  textSize(60);
+  strokeWeight(0);
+  text(overallScore, 1670, 90);
+  text(overallJamScore, 1670, 213);
 }
+
 
 function displayHome() {
   imageMode(CENTER);
@@ -728,9 +982,13 @@ function resetGame(){
   jamScore = 0;
   playerLoses = 0;
   countDownFrame = 0; // Reset count down
+  frameCount = 0;
   bossFrame = 0; // reset boos animation frames
   shopClicked = false; // Reset Shop click state
   homeClicked = false; // Reset Home click state
+  gamePlay = true;
+  originalRect = true;
+  jellyRect = false;
 
   // Reset powerUps to false
   theDouble = false;

@@ -3,9 +3,9 @@
 // Date
 
 // recommendation: 
-// 1 make spongebob eat the burgur if it touches any part of his body
+// 1) make spongebob eat the burgur if it touches any part of his body
 // instead of only touching his mouth.
-// 2 make the shield disapear if spogebob hit an obstacle
+// 2) make the shield disapear if spogebob hit an obstacle
 // and the obstacle should disapear as well.
 
 
@@ -125,9 +125,9 @@ let dutchMan;
 let bite;
 let collect;
 let no;
-let yippee;
 let tryAgain;
 let oops;
+let yippee;
 let shop;
 
 function preload() {
@@ -269,15 +269,7 @@ function draw() {
       if(frameCount % 50 === 0  && obstacleInterval <= 30){
         obstacleInterval -= 7;
       }
-
-      if(frameCount % 50 === 0  && collectiblesInterval <= 10){
-        collectiblesInterval -= 1;
-      }
-      
-      if(frameCount % 50 === 0  && obstacleInterval <= 30){
-        obstacleInterval -= 1;
-      }
-
+    }
     if (gamePlay === true){
       //displaying spongebob and score
       textAlign(LEFT, BASELINE);

@@ -2,32 +2,16 @@
 // Raghad Ibrahim
 // Date
 
-// recommendation: 
-// 1) make spongebob eat the burgur if it touches any part of his body
-// instead of only touching his mouth.
-// 2) make the shield disapear if spogebob hit an obstacle
-// and the obstacle should disapear as well.
-
-
-// they are still overlapping
-// why is it crashing when speed is increased.
-// width is not defined with boss when speed is increased
-// boss is aperaing way too frequently?
-    //a solution could be creating a time variable from boss to start
-    //similar to the one in powerUps
-// why is setting power ups true in glolbal doesn't work
-// increase intervals over time was causing the problem of no burgurs showing up
+// still overlappig
+// decreasing intervals
 
 
 //  menue
+// 0 spongeBob is alive/no pause menu
+// 1 dispalys dying animation/ displays count down animation
+// 2 displays dying menu(home or replay)/ displays pause menu
 let playerLoses = 0;
-// 0 spongeBob is alive
-// 1 dispalys dying animation
-// 2 displays dying menu(home or replay)
 let pauseState = 0;
-// 0 is no pause menu
-// 1 is the count down after pressing resume
-// 2 display pause menu
 let loseMenu = false;
 let gamePlay = false;
 let homeClicked = true; // Track if Home option is clicked
@@ -55,13 +39,13 @@ let shopCharacters;
 let originalRect = true;
 let jellyRect = false;
 let notEnough;
-let burgerValue = 3;
-let jamValue = 0; 
+let burgerValue = 100;
+let jamValue = 10; 
 
-//max is 10
+//max is 30
 //org is 50
 let collectiblesInterval = 50;
-// max is 30
+// max is 45
 // org is 100
 let obstacleInterval = 100;
 let lanes = [0, 270, 270*2, 270*3];
@@ -95,6 +79,8 @@ let startBoss = [];
 let endBoss = [];
 let circles = [];
 let bossTime = 0;
+let switchingBossTime = 0;
+let boss
 let bossFrame = 0;
 let villain;
 
@@ -111,11 +97,12 @@ let countDownFrame = 0;
 let originalChar = true;
 let jellyChar = false;
 
-// music
+// sounds
 let tryAgainPlayed = false;
 let coinPlayed = false;
 let oopsPlayed = false;
 let dutchManPlayed = false;
+let wrongPlayed = false;
 let noPlayed = false;
 let bubble;
 let button;
@@ -131,6 +118,7 @@ let yippee;
 let shop;
 
 function preload() {
+  // images
   bImage = loadImage("assets/backg1.png");
   bImage2 = loadImage("assets/backg2.png");
   burgerImage = loadImage("assets/4.png");
@@ -246,6 +234,7 @@ function draw() {
   if (playerLoses === 2){
       // After the dying animation, display the menu
       if(!tryAgainPlayed){
+        tryAgain.setVolume(0.5);
         tryAgain.play();
         tryAgainPlayed = true;
       }
@@ -258,16 +247,15 @@ function draw() {
     // normal game code
     if(playerLoses === 0 && pauseState === 0){
       // increasing speed over time
-      if(frameCount % 50 === 0 && startSpeed <= 30){
+      if(frameCount % 50 === 0 && startSpeed <= 25){
         startSpeed += speedIncrease;
       }
       // increasing intervals over time
-      if(frameCount % 50 === 0  && collectiblesInterval <= 10){
+      if(frameCount % 150 === 0  && collectiblesInterval >= 30){
         collectiblesInterval -= 1;
       }
-
-      if(frameCount % 50 === 0  && obstacleInterval <= 30){
-        obstacleInterval -= 7;
+      if(frameCount % 150 === 0  && obstacleInterval >= 45){
+        obstacleInterval -= 1;
       }
     }
     if (gamePlay === true){
@@ -283,7 +271,7 @@ function draw() {
       pushingCollectibles();
       moveAndDisplayCollectibles();
       moveAndDisplayObstacles();
-      PowerupsTiming();
+      powerUpsTiming();
     }
 
     if (phase === 1){
@@ -332,7 +320,7 @@ function draw() {
     if (phase === 3){
       //end of boss
       //check that all circles are gone
-      no = false;
+      noPlayed = false;
       if (bossFrame < 7){
         image(endBoss[bossFrame], 0, 250);
         moveAndDisplayCircles();
@@ -352,8 +340,10 @@ function draw() {
 
     if (phase === 4 && pauseState === 0 && playerLoses === 0){
       // boss apears every 2000 frames
-      if(frameCount % 2000 === 0){
+      switchingBossTime ++;
+      if (switchingBossTime === 2000){
         phase = 1;
+        switchingBossTime = 0;
       }
       // Add new obstacles at regular intervals
       if (pauseState === 0){
@@ -575,6 +565,7 @@ function moveAndDisplayCircles() {
         circles[i].x, circles[i].y, circles[i].radius * 2)){
         if (theShield === false){
           if (!oopsPlayed){
+            oops.setVolume(0.5);
             oops.play();
             oopsPlayed = true;
           }
@@ -611,6 +602,7 @@ function moveAndDisplayObstacles(){
           playerLoses = 1;
         }
         if (theShield === true){
+          no.play();
           theShield = false; 
           obstacles.splice(i, 1);
           continue;
@@ -629,6 +621,7 @@ function moveAndDisplayObstacles(){
           playerLoses = 1;
         }
         if (theShield === true){
+          no.play();
           theShield = false; 
           obstacles.splice(i, 1);
           continue;
@@ -693,16 +686,34 @@ function moveAndDisplayCollectibles(){
         }
       }
       else if (collectibles[i].type === "double"){
-        theDouble = true;
-        collect.play();
+        if (theDouble === true){
+          doubleTime = 0;
+          collect.play();
+        }
+        else{
+          theDouble = true;
+          collect.play();
+        }
       }
       else if (collectibles[i].type === "shield"){
-        theShield = true;
-        collect.play();
+        if (theShield === true){
+          magnetTime = 0;
+          collect.play();
+        }
+        else{
+          theShield = true;
+          collect.play();
+        }
       }
       else if (collectibles[i].type === "magnet"){
-        theMagnet = true;
-        collect.play();
+        if (theMagnet === true){
+          collect.play();
+          magnetTime = 0;
+        }
+        else{
+          theMagnet = true;
+          collect.play();
+        }
       }
       collectibles.splice(i, 1);
     }
@@ -733,7 +744,7 @@ function pushingCollectibles(){
   }
 }
 
-function PowerupsTiming(){
+function powerUpsTiming(){
   if (playerLoses === 0 && pauseState === 0){
     if(theDouble === true){
       doubleTime ++;
@@ -783,8 +794,10 @@ function mousePressed(){
   if (gamePlay === true){
     // Check for mouse click on the pause icon
     if (mouseX > 60 && mouseX < 115 && mouseY > 20 && mouseY < 80){
-      button.play();
-      pauseState = 2;
+      if(pauseState!==1){
+        bubble.play();
+        pauseState = 2;
+      }
     }
 
     if (
@@ -794,6 +807,7 @@ function mousePressed(){
       mouseY < menuY + 130 + buttonHeight){
       // Play again option
       if (loseMenu){
+        tryAgain.stop();
         bubble.play();
         resetGame();
       }
@@ -812,6 +826,7 @@ function mousePressed(){
       mouseY < menuY + 330 + buttonHeight){
       // Home option
       if(pauseState === 2 || loseMenu){
+        if(loseMenu) tryAgain.stop();
         bubble.play();
         homeClicked = true;
         shopClicked = false; // Ensure only one thing is displayed at a time
@@ -893,7 +908,7 @@ function mousePressed(){
 
     // Check if the mouse is inside the "Home" button
     if (mouseX > 30 && mouseX < 230 && mouseY > 10 && mouseY < 110){
-      button.play();
+      bubble.play();
       homeClicked = true;
       shopClicked = false;
       gamePlay = false;
@@ -1064,10 +1079,12 @@ function resetGame(){
   // Clearing arrays
   obstacles = [];
   collectibles = [];
-
-  // set back sstarting peed to 10
-  startSpeed = 10;
   circles = [];
+
+  // set back starting speed and intervals
+  startSpeed = 10;
+  obstacleInterval = 100;
+  collectiblesInterval = 50;
 
   //return spongeBob to the center
   sponge.x = width / 1.4;
@@ -1081,6 +1098,7 @@ function resetGame(){
   countDownFrame = 0; // Reset count down
   frameCount = 0;
   bossFrame = 0; // reset boos animation frames
+  switchingBossTime = 0;
   shopClicked = false; // Reset Shop click state
   homeClicked = false; // Reset Home click state
   gamePlay = true;
@@ -1099,4 +1117,6 @@ function resetGame(){
   // Reset sound to false
   oopsPlayed = false;
   tryAgainPlayed = false;
+  
+  frameCount = 0;
 }

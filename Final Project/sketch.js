@@ -1,10 +1,12 @@
 // Final Project
 // Raghad Ibrahim
-// Date
 
-// still overlappig
-// decreasing intervals
-
+// SpongBob swimming and collecting burgurs, or jellyfish jam (which is rare)
+// SpongeBob has to avoid rocks for the longest time
+// there is power ups that help sponge bob survive longer
+// shiels, double (doubles the burger), magnet
+// The flying Dutchman boss apears every 1000 frames
+// there is another spongeBob character that you can purchase from the shop
 
 //  menue
 // 0 spongeBob is alive/no pause menu
@@ -39,8 +41,8 @@ let shopCharacters;
 let originalRect = true;
 let jellyRect = false;
 let notEnough;
-let burgerValue = 100;
-let jamValue = 10; 
+let burgerValue = 10;
+let jamValue = 3; 
 
 //max is 30
 //org is 50
@@ -234,7 +236,7 @@ function draw() {
   if (playerLoses === 2){
       // After the dying animation, display the menu
       if(!tryAgainPlayed){
-        tryAgain.setVolume(0.5);
+        tryAgain.setVolume(0.7);
         tryAgain.play();
         tryAgainPlayed = true;
       }
@@ -565,7 +567,7 @@ function moveAndDisplayCircles() {
         circles[i].x, circles[i].y, circles[i].radius * 2)){
         if (theShield === false){
           if (!oopsPlayed){
-            oops.setVolume(0.5);
+            oops.setVolume(0.2);
             oops.play();
             oopsPlayed = true;
           }
@@ -659,8 +661,8 @@ function moveAndDisplayCollectibles(){
     }
     if (collideRectRect(spongeX , spongeY, spongeCollideW, 
       spongeCollideH, collectibles[i].x, collectibles[i].y, 100, 82)){
-      bite.setVolume(0.1);
-      collect.setVolume(0.1);
+      bite.setVolume(0.4);
+      collect.setVolume(0.4);
       if (collectibles[i].type === "burger"){
         if (theDouble) {
           score += 2;
@@ -1117,6 +1119,5 @@ function resetGame(){
   // Reset sound to false
   oopsPlayed = false;
   tryAgainPlayed = false;
-  
   frameCount = 0;
 }
